@@ -1,11 +1,12 @@
 'use client';
 
 import { useAppContext } from '../context/AppContext';
-import { copyToClipboard, downloadFile } from '../lib/utils';
+import { copyToClipboard, downloadFile, generateResumeContent, generateResumePreview } from '../lib/utils';
 import TwoColumnLayout from './layouts/TwoColumnLayout';
 import Button from './ui/Button';
 import ToggleSwitch from './ui/ToggleSwitch';
 import toast from 'react-hot-toast';
+import { useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -103,6 +104,65 @@ const OriginalBulletItem = ({ bullet, onToggle }) => {
 };
 
 /**
+ * Sortable Generated Bullet Component
+ */
+const SortableGeneratedBullet = ({ bullet, onToggle }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: bullet.id,
+    handle: true // Enable handle-based dragging
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      className={`
+        p-3 border rounded-lg bg-white shadow-sm
+        ${isDragging ? 'opacity-50' : ''}
+        ${bullet.isEnabled ? 'border-blue-300 bg-blue-50' : 'border-gray-200'}
+      `}
+    >
+      <div className="flex items-start space-x-3">
+        <div {...listeners} className="cursor-move p-1">
+          <div className="w-4 h-4 bg-gray-300 rounded flex items-center justify-center">
+            <div className="w-2 h-2 bg-gray-600 rounded"></div>
+          </div>
+        </div>
+        <ToggleSwitch
+          enabled={bullet.isEnabled}
+          onChange={() => {
+            console.log('ToggleSwitch clicked for bullet:', bullet.id, 'current state:', bullet.isEnabled);
+            onToggle(bullet.id, !bullet.isEnabled);
+          }}
+          className="mt-1"
+        />
+        <div className="flex-1">
+          <p className="text-sm text-gray-700 mb-1">
+            {bullet.text}
+          </p>
+          <p className="text-xs text-gray-500">
+            Category: {bullet.category || 'General'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Generated Resume View Component
  * Displays original resume bullets, generated bullets, and final combined view
  */
@@ -119,9 +179,30 @@ const GeneratedResumeView = () => {
   /**
    * Handle generated bullet toggle
    */
-  const handleGeneratedBulletToggle = (bulletId, variantId, isEnabled) => {
-    actions.toggleGeneratedBullet(bulletId, variantId, isEnabled);
+  const handleGeneratedBulletToggle = (bulletId, isEnabled) => {
+    console.log('=== TOGGLE DEBUG ===');
+    console.log('Toggling generated bullet:', bulletId, 'to:', isEnabled);
+    console.log('Before toggle - generated bullets:', state.generatedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
+    
+    // Try direct state update first to test
+    const updatedBullets = state.generatedBullets.map(bullet => 
+      bullet.id === bulletId 
+        ? { ...bullet, isEnabled }
+        : bullet
+    );
+    console.log('Updated bullets:', updatedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
+    actions.setGeneratedBullets(updatedBullets);
+    
+    // Also try the toggle action
+    console.log('Calling actions.toggleGeneratedBullet...');
+    actions.toggleGeneratedBullet(bulletId, isEnabled);
+    console.log('Action called, checking if it worked...');
   };
+
+  // Monitor state changes
+  useEffect(() => {
+    console.log('State changed - generated bullets:', state.generatedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
+  }, [state.generatedBullets]);
 
   /**
    * Handle original bullet toggle
@@ -137,36 +218,13 @@ const GeneratedResumeView = () => {
     const { active, over } = event;
 
     if (active.id !== over.id) {
-      // Flatten all variants from all bullets
-      const allVariants = [];
-      state.generatedBullets.forEach(bullet => {
-        bullet.variants.forEach(variant => {
-          allVariants.push({
-            ...variant,
-            bulletId: bullet.id,
-            originalText: bullet.original
-          });
-        });
-      });
+      const oldIndex = state.generatedBullets.findIndex(bullet => bullet.id === active.id);
+      const newIndex = state.generatedBullets.findIndex(bullet => bullet.id === over.id);
 
-      const oldIndex = allVariants.findIndex(variant => variant.id === active.id);
-      const newIndex = allVariants.findIndex(variant => variant.id === over.id);
-
-      const reorderedVariants = arrayMove(allVariants, oldIndex, newIndex);
-
-      // Reconstruct the bullets structure
-      const updatedBullets = state.generatedBullets.map(bullet => ({
-        ...bullet,
-        variants: reorderedVariants
-          .filter(variant => variant.bulletId === bullet.id)
-          .map(variant => ({
-            id: variant.id,
-            text: variant.text,
-            isEnabled: variant.isEnabled
-          }))
-      }));
-
-      actions.setGeneratedBullets(updatedBullets);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedBullets = arrayMove(state.generatedBullets, oldIndex, newIndex);
+        actions.setGeneratedBullets(reorderedBullets);
+      }
     }
   };
 
@@ -178,17 +236,27 @@ const GeneratedResumeView = () => {
       .filter(bullet => bullet.isEnabled)
       .map(bullet => bullet.text);
 
-    const enabledGeneratedBullets = state.generatedBullets.flatMap(bullet =>
-      bullet.variants
-        .filter(variant => variant.isEnabled)
-        .map(variant => variant.text)
-    );
+    const enabledGeneratedBullets = state.generatedBullets
+      .filter(bullet => bullet.isEnabled)
+      .map(bullet => bullet.text);
 
     return {
       originalBullets: enabledOriginalBullets,
       generatedBullets: enabledGeneratedBullets,
       allBullets: [...enabledOriginalBullets, ...enabledGeneratedBullets]
     };
+  };
+
+  /**
+   * Get formatted resume preview
+   */
+  const getResumePreview = () => {
+    const resumeData = {
+      originalResume: state.originalResume,
+      originalBullets: state.originalBullets,
+      generatedBullets: state.generatedBullets
+    };
+    return generateResumePreview(resumeData);
   };
 
   /**
@@ -213,37 +281,24 @@ const GeneratedResumeView = () => {
   };
 
   /**
-   * Download resume as PDF
+   * Download resume as text file
    */
-  const handleDownloadPDF = () => {
-    const { allBullets } = getFinalResumeContent();
+  const handleDownloadResume = () => {
+    console.log('Downloading resume with state:', {
+      originalResume: state.originalResume?.substring(0, 100) + '...',
+      originalBullets: state.originalBullets,
+      generatedBullets: state.generatedBullets
+    });
 
-    const resumeContent = `
-${state.originalResume}
+    const resumeData = {
+      originalResume: state.originalResume,
+      originalBullets: state.originalBullets,
+      generatedBullets: state.generatedBullets
+    };
 
-Selected Bullets:
-${allBullets.join('\n\n')}
-    `;
-
-    downloadFile(resumeContent, 'resume.pdf', 'application/pdf');
-    toast.success('Resume downloaded as PDF');
-  };
-
-  /**
-   * Download resume as DOCX
-   */
-  const handleDownloadDOCX = () => {
-    const { allBullets } = getFinalResumeContent();
-
-    const resumeContent = `
-${state.originalResume}
-
-Selected Bullets:
-${allBullets.join('\n\n')}
-    `;
-
-    downloadFile(resumeContent, 'resume.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    toast.success('Resume downloaded as DOCX');
+    const content = generateResumeContent(resumeData);
+    downloadFile(content, 'resume.txt', 'text/plain');
+    toast.success('Resume downloaded as text file');
   };
 
   /**
@@ -253,16 +308,18 @@ ${allBullets.join('\n\n')}
     actions.setCurrentStep('skills');
   };
 
-  // Flatten all variants for drag and drop
-  const allVariants = state.generatedBullets.flatMap(bullet =>
-    bullet.variants.map(variant => ({
-      ...variant,
-      bulletId: bullet.id,
-      originalText: bullet.original
-    }))
-  );
+  // For the new structure, we don't need to flatten variants
+  const allGeneratedBullets = state.generatedBullets;
 
   const { originalBullets, generatedBullets, allBullets } = getFinalResumeContent();
+  const resumePreview = getResumePreview();
+  
+  // Debug logging
+  console.log('Current state:', {
+    generatedBulletsCount: state.generatedBullets.length,
+    enabledGeneratedBullets: state.generatedBullets.filter(b => b.isEnabled).length,
+    allGeneratedBullets: state.generatedBullets.map(b => ({ id: b.id, text: b.text.substring(0, 50), isEnabled: b.isEnabled }))
+  });
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -300,51 +357,41 @@ ${allBullets.join('\n\n')}
           {/* Generated Bullets */}
           <div className="lg:col-span-1">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Generated Bullets ({state.generatedBullets.flatMap(b => b.variants).filter(v => v.isEnabled).length} enabled)
+              Generated Bullets ({state.generatedBullets.filter(b => b.isEnabled).length} enabled)
             </h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext
-                  items={allVariants.map(variant => variant.id)}
-                  strategy={verticalListSortingStrategy}
+                          <div className="space-y-3 max-h-96 overflow-y-auto">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
                 >
-                  {allVariants.map((variant) => (
-                    <SortableItem
-                      key={variant.id}
-                      variant={variant}
-                      onToggle={handleGeneratedBulletToggle}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
+                  <SortableContext
+                    items={allGeneratedBullets.map(bullet => bullet.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                                         {allGeneratedBullets.map((bullet) => (
+                       <SortableGeneratedBullet
+                         key={bullet.id}
+                         bullet={bullet}
+                         onToggle={handleGeneratedBulletToggle}
+                       />
+                     ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
           </div>
 
-          {/* Final Resume Preview */}
-          <div className="lg:col-span-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Final Resume ({allBullets.length} total bullets)
-            </h3>
-            <div className="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
-              <div className="space-y-2">
-                {allBullets.length === 0 ? (
-                  <p className="text-gray-500 italic text-sm">
-                    No bullets selected. Toggle bullets above to see them here.
-                  </p>
-                ) : (
-                  allBullets.map((bullet, index) => (
-                    <div key={index} className="p-2 bg-white rounded border-l-4 border-blue-500">
-                      <p className="text-sm text-gray-700">{bullet}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+                     {/* Final Resume Preview */}
+           <div className="lg:col-span-1">
+             <h3 className="text-lg font-semibold text-gray-900 mb-4">
+               Final Resume ({allBullets.length} total bullets)
+             </h3>
+             <div className="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
+               <div className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
+                 {resumePreview}
+               </div>
+             </div>
+           </div>
         </div>
 
         {/* Action Buttons */}
@@ -358,21 +405,50 @@ ${allBullets.join('\n\n')}
           
           <Button
             variant="primary"
-            onClick={handleDownloadPDF}
+            onClick={handleDownloadResume}
           >
-            Download PDF
+            Download Resume (TXT)
           </Button>
           
           <Button
-            variant="primary"
-            onClick={handleDownloadDOCX}
+            variant="outline"
+            onClick={() => {
+              downloadFile(state.coverLetter, 'cover-letter.txt', 'text/plain');
+              toast.success('Cover letter downloaded');
+            }}
           >
-            Download DOCX
+            Download Cover Letter
           </Button>
         </div>
 
+        {/* Cover Letter Section */}
+        {state.coverLetter && (
+          <div className="mt-8 border-t pt-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Generated Cover Letter
+            </h3>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="whitespace-pre-wrap text-sm text-gray-700 mb-4">
+                {state.coverLetter}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    copyToClipboard(state.coverLetter);
+                    toast.success('Cover letter copied to clipboard');
+                  }}
+                >
+                  Copy Cover Letter
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 text-center text-sm text-gray-600">
           <p>💡 Tip: Toggle original bullets on/off, toggle generated bullets on/off, and drag/drop generated bullets to reorder them in your final resume.</p>
+          <p className="mt-2">📄 Files download as .txt format for easy editing in any text editor or word processor.</p>
         </div>
       </div>
     </div>

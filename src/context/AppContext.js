@@ -84,21 +84,16 @@ function appReducer(state, action) {
     case ACTIONS.RESET_STATE:
       return initialState;
       
-    case ACTIONS.TOGGLE_GENERATED_BULLET:
-      const updatedGeneratedBullets = state.generatedBullets.map(bullet => {
-        if (bullet.id === action.payload.bulletId) {
-          return {
-            ...bullet,
-            variants: bullet.variants.map(variant => 
-              variant.id === action.payload.variantId 
-                ? { ...variant, isEnabled: action.payload.isEnabled }
-                : variant
-            )
-          };
-        }
-        return bullet;
-      });
-      return { ...state, generatedBullets: updatedGeneratedBullets };
+         case ACTIONS.TOGGLE_GENERATED_BULLET:
+       console.log('Reducer: TOGGLE_GENERATED_BULLET action received:', action.payload);
+       console.log('Reducer: Current generated bullets:', state.generatedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
+       const updatedGeneratedBullets = state.generatedBullets.map(bullet => 
+         bullet.id === action.payload.id 
+           ? { ...bullet, isEnabled: action.payload.isEnabled }
+           : bullet
+       );
+       console.log('Reducer: Updated generated bullets:', updatedGeneratedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
+       return { ...state, generatedBullets: updatedGeneratedBullets };
       
     case ACTIONS.TOGGLE_ORIGINAL_BULLET:
       const updatedOriginalBullets = state.originalBullets.map(bullet => 
@@ -165,11 +160,13 @@ export function AppProvider({ children }) {
     resetState: () => 
       dispatch({ type: ACTIONS.RESET_STATE }),
       
-    toggleGeneratedBullet: (bulletId, variantId, isEnabled) => 
-      dispatch({ 
-        type: ACTIONS.TOGGLE_GENERATED_BULLET, 
-        payload: { bulletId, variantId, isEnabled } 
-      }),
+     toggleGeneratedBullet: (id, isEnabled) => {
+       console.log('Action creator called with:', { id, isEnabled });
+       dispatch({ 
+         type: ACTIONS.TOGGLE_GENERATED_BULLET, 
+         payload: { id, isEnabled } 
+       });
+     },
       
     toggleOriginalBullet: (id, isEnabled) => 
       dispatch({ 

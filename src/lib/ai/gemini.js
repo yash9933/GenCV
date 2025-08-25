@@ -90,10 +90,10 @@ class GeminiClient {
          }
        }
 
-      // Validate response structure
-      if (!parsedResponse.suggestedSkills || !parsedResponse.rewrittenBullets || !parsedResponse.coverLetter) {
-        throw new Error('Incomplete response from Gemini API - missing required fields');
-      }
+             // Validate response structure
+       if (!parsedResponse.suggestedSkills || !parsedResponse.newBullets || !parsedResponse.coverLetter) {
+         throw new Error('Incomplete response from Gemini API - missing required fields');
+       }
 
       return parsedResponse;
     } catch (error) {
@@ -108,13 +108,10 @@ class GeminiClient {
    * @returns {string} - Formatted prompt
    */
   buildPrompt({ jobDescription, resumeText, selectedSkills }) {
-    return `You are a highly skilled career coach and professional resume writer. Your task is to analyze a job description and resume, then return ONLY a valid JSON object with no additional text or formatting.
+    return `You are a highly skilled career coach and professional resume writer. Your task is to analyze a job description and generate new resume bullets and cover letter, then return ONLY a valid JSON object with no additional text or formatting.
 
 JOB DESCRIPTION:
 ${jobDescription}
-
-ORIGINAL RESUME:
-${resumeText}
 
 SELECTED SKILLS TO HIGHLIGHT:
 ${selectedSkills.join(', ')}
@@ -124,12 +121,20 @@ CRITICAL: You must return ONLY valid JSON. No markdown, no explanations, no addi
 REQUIRED JSON STRUCTURE:
 {
   "suggestedSkills": ["skill1", "skill2", "skill3", "skill4", "skill5"],
-  "rewrittenBullets": [
+  "newBullets": [
     {
-      "original": "Original bullet point text",
-      "variants": [
-        "Variant A that highlights selected skills",
-        "Variant B with different emphasis on selected skills"
+      "category": "Professional Experience",
+      "bullets": [
+        "New bullet point that highlights selected skills and matches job requirements",
+        "Another new bullet point showcasing relevant experience",
+        "Third bullet point demonstrating key competencies"
+      ]
+    },
+    {
+      "category": "Projects",
+      "bullets": [
+        "Project-related bullet point highlighting selected skills",
+        "Another project bullet showcasing relevant achievements"
       ]
     }
   ],
@@ -139,10 +144,13 @@ REQUIRED JSON STRUCTURE:
 RULES:
 1. Return ONLY the JSON object above - no other text
 2. Extract 5-7 key skills from the job description for suggestedSkills
-3. For each bullet point in the resume, create 2-3 variants that highlight the selected skills
-4. Write a compelling 3-4 paragraph cover letter
-5. Ensure all content is ATS-friendly and professional
-6. Use proper JSON formatting with double quotes around all strings
+3. Generate 8-12 completely NEW bullet points based on the job description and selected skills
+4. Organize bullets into categories like "Professional Experience", "Projects", "Technical Skills", etc.
+5. Each bullet should be specific, quantifiable, and highlight the selected skills
+6. Write a compelling 3-4 paragraph cover letter
+7. Ensure all content is ATS-friendly and professional
+8. Use proper JSON formatting with double quotes around all strings
+9. Do NOT reference or rewrite existing resume content - create entirely new bullets
 
 JSON RESPONSE:`;
   }

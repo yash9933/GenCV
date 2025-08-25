@@ -183,3 +183,156 @@ export const debounce = (func, wait) => {
   };
 };
 
+/**
+ * Generate complete updated resume content
+ * @param {Object} data - Resume data
+ * @returns {string} - Complete updated resume
+ */
+export const generateResumeContent = (data) => {
+  const { originalResume, originalBullets, generatedBullets } = data;
+  
+  console.log('Generating complete resume with data:', {
+    originalResumeLength: originalResume?.length,
+    originalBulletsCount: originalBullets?.length,
+    generatedBulletsCount: generatedBullets?.length,
+    enabledOriginalBullets: originalBullets?.filter(b => b.isEnabled)?.length,
+    enabledGeneratedBullets: generatedBullets?.filter(b => b.isEnabled)?.length
+  });
+  
+  // Get all enabled bullets
+  const enabledOriginalBullets = originalBullets?.filter(bullet => bullet.isEnabled) || [];
+  const enabledGeneratedBullets = generatedBullets?.filter(bullet => bullet.isEnabled) || [];
+  
+  // Start with the original resume
+  let updatedResume = originalResume;
+  
+  // If we have original bullets with toggles, replace the original content
+  if (originalBullets && originalBullets.length > 0) {
+    const lines = updatedResume.split('\n');
+    const newLines = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Check if this line contains any of the original bullets
+      const matchingBullet = originalBullets.find(bullet => 
+        line.includes(bullet.text) || bullet.text.includes(line.trim())
+      );
+      
+      if (matchingBullet) {
+        // Only include this line if the bullet is enabled
+        if (matchingBullet.isEnabled) {
+          newLines.push(line);
+        }
+        // Skip this line if bullet is disabled
+      } else {
+        // Keep lines that don't match any bullets (headers, formatting, etc.)
+        newLines.push(line);
+      }
+    }
+    
+    updatedResume = newLines.join('\n');
+  }
+  
+  // Add generated bullets to the work experience section if any are enabled
+  if (enabledGeneratedBullets.length > 0) {
+    const lines = updatedResume.split('\n');
+    const newLines = [];
+    let workExperienceFound = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      newLines.push(line);
+      
+      // Look for work experience section headers
+      if (line.match(/^(EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)/i) && !workExperienceFound) {
+        workExperienceFound = true;
+        
+        // Find the next job title or section header
+        let insertIndex = i + 1;
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j].trim();
+          // If we find another section header or job title, stop here
+          if (nextLine.match(/^(EDUCATION|SKILLS|PROJECTS|SUMMARY)/i) || 
+              (nextLine.length > 0 && !nextLine.startsWith('•') && !nextLine.startsWith('-') && !nextLine.startsWith('*'))) {
+            break;
+          }
+          insertIndex = j + 1;
+        }
+        
+        // Insert generated bullets at the beginning of work experience
+        const bulletLines = enabledGeneratedBullets.map(bullet => `• ${bullet.text}`);
+        newLines.splice(insertIndex, 0, '', 'Generated Bullets:', '', ...bulletLines, '');
+      }
+    }
+    
+    updatedResume = newLines.join('\n');
+  }
+  
+  console.log('Generated complete resume length:', updatedResume.length);
+  console.log('Resume preview:', updatedResume.substring(0, 500));
+  
+  return updatedResume;
+};
+
+/**
+ * Generate formatted resume preview
+ * @param {Object} data - Resume data
+ * @returns {string} - Formatted resume preview
+ */
+export const generateResumePreview = (data) => {
+  const { originalResume, originalBullets, generatedBullets } = data;
+  
+  console.log('Preview function called with:', {
+    originalBulletsCount: originalBullets?.length || 0,
+    generatedBulletsCount: generatedBullets?.length || 0,
+    enabledOriginalBullets: originalBullets?.filter(b => b.isEnabled).length || 0,
+    enabledGeneratedBullets: generatedBullets?.filter(b => b.isEnabled).length || 0
+  });
+  
+  // Get all enabled bullets
+  const enabledOriginalBullets = originalBullets?.filter(bullet => bullet.isEnabled) || [];
+  const enabledGeneratedBullets = generatedBullets?.filter(bullet => bullet.isEnabled) || [];
+  
+  // Create a formatted resume preview
+  let preview = '';
+  
+  // Add header
+  preview += 'PROFESSIONAL RESUME\n';
+  preview += '='.repeat(50) + '\n\n';
+  
+  // Add original resume content (first 200 characters)
+  if (originalResume) {
+    const truncatedResume = originalResume.length > 200 
+      ? originalResume.substring(0, 200) + '...'
+      : originalResume;
+    preview += truncatedResume + '\n\n';
+  }
+  
+  // Add selected bullets section
+  if (enabledOriginalBullets.length > 0 || enabledGeneratedBullets.length > 0) {
+    preview += 'SELECTED BULLETS\n';
+    preview += '-'.repeat(30) + '\n';
+    
+    // Add original bullets
+    if (enabledOriginalBullets.length > 0) {
+      preview += 'Original Bullets (Enabled):\n';
+      enabledOriginalBullets.forEach(bullet => {
+        preview += `• ${bullet.text}\n`;
+      });
+      preview += '\n';
+    }
+    
+    // Add generated bullets
+    if (enabledGeneratedBullets.length > 0) {
+      preview += 'Generated Bullets (Will appear in Work Experience):\n';
+      enabledGeneratedBullets.forEach(bullet => {
+        preview += `• ${bullet.text}\n`;
+      });
+      preview += '\n';
+    }
+  }
+  
+  return preview;
+};
+

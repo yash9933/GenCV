@@ -61,32 +61,31 @@ const SkillChecklist = () => {
 
       console.log('Documents generated successfully:', data);
 
-      // Process the generated content
-      const { suggestedSkills, rewrittenBullets, coverLetter } = data.data;
+             // Process the generated content
+       const { suggestedSkills, newBullets, coverLetter } = data.data;
 
-      // Update suggested skills if new ones were provided
-      if (suggestedSkills && suggestedSkills.length > 0) {
-        actions.setSuggestedSkills(suggestedSkills);
-      }
+       // Update suggested skills if new ones were provided
+       if (suggestedSkills && suggestedSkills.length > 0) {
+         actions.setSuggestedSkills(suggestedSkills);
+       }
 
-      // Process rewritten bullets
-      const processedBullets = rewrittenBullets.map(bullet => ({
-        id: generateId(),
-        original: bullet.original,
-        variants: bullet.variants.map(variant => ({
-          id: generateId(),
-          text: variant,
-          isEnabled: false // All generated bullets start as disabled
-        }))
-      }));
+       // Process new bullets - flatten all categories into a single array
+       const allNewBullets = newBullets.flatMap(category => 
+         category.bullets.map(bullet => ({
+           id: generateId(),
+           text: bullet,
+           category: category.category,
+           isEnabled: false // All generated bullets start as disabled
+         }))
+       );
 
-      // Extract original bullets from resume text
-      const originalBullets = extractBulletPoints(state.originalResume);
+       // Extract original bullets from resume text
+       const originalBullets = extractBulletPoints(state.originalResume);
 
-      actions.setGeneratedBullets(processedBullets);
-      actions.setOriginalBullets(originalBullets);
-      actions.setCoverLetter(coverLetter);
-      actions.setCurrentStep('generated');
+       actions.setGeneratedBullets(allNewBullets);
+       actions.setOriginalBullets(originalBullets);
+       actions.setCoverLetter(coverLetter);
+       actions.setCurrentStep('generated');
       
       toast.success('Documents generated successfully!');
 
