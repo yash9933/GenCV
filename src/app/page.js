@@ -5,6 +5,7 @@ import ResumeInputForm from '../components/ResumeInputForm';
 import SkillChecklist from '../components/SkillChecklist';
 import GeneratedResumeView from '../components/GeneratedResumeView';
 import GeneratedCoverLetter from '../components/GeneratedCoverLetter';
+import ResumeJSONViewer from '../components/ResumeJSONViewer';
 
 /**
  * Main Application Component
@@ -20,7 +21,12 @@ function AppContent() {
         return <ResumeInputForm />;
         
       case 'skills':
-        return <SkillChecklist />;
+        return (
+          <div className="space-y-8">
+            <ResumeJSONViewer />
+            <SkillChecklist />
+          </div>
+        );
         
       case 'generated':
         return (

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { parsePDF, extractSkillsFromJD } from '../lib/utils';
+import { parsePDF, extractSkillsFromJD, extractResumeToJSON } from '../lib/utils';
 import Button from './ui/Button';
 import Textarea from './ui/Textarea';
 import toast from 'react-hot-toast';
@@ -66,6 +66,15 @@ const ResumeInputForm = () => {
     }
 
     try {
+      console.log('Extracting resume to JSON...');
+      
+      // Extract resume to structured JSON
+      const resumeJSON = extractResumeToJSON(state.originalResume);
+      console.log('Extracted resume JSON:', resumeJSON);
+      
+      // Store the structured resume data
+      actions.setResumeJSON(resumeJSON);
+      
       console.log('Extracting skills from job description...');
       
       // Extract skills from job description
@@ -79,11 +88,11 @@ const ResumeInputForm = () => {
       actions.setInputSubmitted(true);
       actions.setCurrentStep('skills');
       
-      toast.success('Skills extracted successfully');
+      toast.success('Resume parsed and skills extracted successfully');
       
     } catch (error) {
-      console.error('Error extracting skills:', error);
-      toast.error('Failed to extract skills from job description');
+      console.error('Error processing resume:', error);
+      toast.error('Failed to process resume');
     }
   };
 
@@ -122,18 +131,34 @@ const ResumeInputForm = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resume (Paste your resume text)
+                Resume (Upload PDF or paste text)
               </label>
               
-              {/* File Upload - Currently Disabled */}
+              {/* File Upload */}
               <div className="mb-4">
                 <div className="p-4 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-center">
-                  <p className="text-sm text-gray-600 mb-2">
-                    📄 PDF Upload (Coming Soon)
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    PDF parsing is currently being improved. Please paste your resume text below.
-                  </p>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="resume-upload"
+                    disabled={isProcessingFile}
+                  />
+                  <label
+                    htmlFor="resume-upload"
+                    className={`cursor-pointer block ${isProcessingFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <div className="flex flex-col items-center">
+                      <div className="text-2xl mb-2">📄</div>
+                      <p className="text-sm text-gray-600 mb-1">
+                        {isProcessingFile ? 'Processing PDF...' : 'Click to upload PDF resume'}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {isProcessingFile ? 'Please wait...' : 'or paste your resume text below'}
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
               

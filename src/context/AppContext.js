@@ -7,6 +7,7 @@ const initialState = {
   // Form data
   jobDescription: '',
   originalResume: '',
+  resumeJSON: {}, // Structured resume data
   
   // Skills
   suggestedSkills: [],
@@ -30,6 +31,7 @@ const initialState = {
 const ACTIONS = {
   SET_JOB_DESCRIPTION: 'SET_JOB_DESCRIPTION',
   SET_ORIGINAL_RESUME: 'SET_ORIGINAL_RESUME',
+  SET_RESUME_JSON: 'SET_RESUME_JSON',
   SET_SUGGESTED_SKILLS: 'SET_SUGGESTED_SKILLS',
   SET_SELECTED_SKILLS: 'SET_SELECTED_SKILLS',
   SET_GENERATED_BULLETS: 'SET_GENERATED_BULLETS',
@@ -53,6 +55,9 @@ function appReducer(state, action) {
       
     case ACTIONS.SET_ORIGINAL_RESUME:
       return { ...state, originalResume: action.payload };
+      
+    case ACTIONS.SET_RESUME_JSON:
+      return { ...state, resumeJSON: action.payload };
       
     case ACTIONS.SET_SUGGESTED_SKILLS:
       return { ...state, suggestedSkills: action.payload };
@@ -129,6 +134,9 @@ export function AppProvider({ children }) {
       
     setOriginalResume: (resume) => 
       dispatch({ type: ACTIONS.SET_ORIGINAL_RESUME, payload: resume }),
+      
+    setResumeJSON: (resumeJSON) => 
+      dispatch({ type: ACTIONS.SET_RESUME_JSON, payload: resumeJSON }),
       
     setSuggestedSkills: (skills) => 
       dispatch({ type: ACTIONS.SET_SUGGESTED_SKILLS, payload: skills }),
