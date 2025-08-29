@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { resumeJSONToText } from '../lib/utils';
+import { jsonToLaTeX } from '../lib/utils';
 
 const ResumeJSONViewer = () => {
   const { state } = useAppContext();
@@ -19,7 +19,7 @@ const ResumeJSONViewer = () => {
     );
   }
 
-  const formattedText = resumeJSONToText(resumeJSON);
+  const formattedText = jsonToLaTeX(resumeJSON);
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -50,45 +50,60 @@ const ResumeJSONViewer = () => {
 
         {/* Section Summary */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                     <div className="bg-blue-50 p-4 rounded-lg">
-             <h4 className="font-semibold text-blue-800">Personal Info</h4>
-             <p className="text-blue-600 text-sm">
-               {resumeJSON.name ? '✓ Name' : '✗ No name'}
-             </p>
-             <p className="text-blue-600 text-sm">
-               {resumeJSON.contact?.email ? '✓ Email' : '✗ No email'}
-             </p>
-             <p className="text-blue-600 text-sm">
-               {resumeJSON.contact?.phone ? '✓ Phone' : '✗ No phone'}
-             </p>
-           </div>
-
-                     <div className="bg-green-50 p-4 rounded-lg">
-             <h4 className="font-semibold text-green-800">Experience</h4>
-             <p className="text-green-600 text-sm">
-               {resumeJSON.experience?.length || 0} positions
-             </p>
-             <p className="text-green-600 text-sm">
-               {resumeJSON.projects?.length || 0} projects
-             </p>
-           </div>
-
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-purple-800">Education</h4>
-            <p className="text-purple-600 text-sm">
-              {resumeJSON.education?.length || 0} entries
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800">Contact Info</h4>
+            <p className="text-blue-600 text-sm">
+              {resumeJSON.metadata?.name ? '✓ Name' : '✗ No name'}
+            </p>
+            <p className="text-blue-600 text-sm">
+              {resumeJSON.metadata?.contact?.email ? '✓ Email' : '✗ No email'}
+            </p>
+            <p className="text-blue-600 text-sm">
+              {resumeJSON.metadata?.contact?.phone ? '✓ Phone' : '✗ No phone'}
             </p>
           </div>
 
-                     <div className="bg-orange-50 p-4 rounded-lg">
-             <h4 className="font-semibold text-orange-800">Skills</h4>
-             <p className="text-orange-600 text-sm">
-               {Object.values(resumeJSON.skills || {}).flat().length || 0} total skills
-             </p>
-             <p className="text-orange-600 text-sm">
-               {Object.keys(resumeJSON.skills || {}).length || 0} categories
-             </p>
-           </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-green-800">Sections</h4>
+            <p className="text-green-600 text-sm">
+              {resumeJSON.sections?.length || 0} total sections
+            </p>
+            <p className="text-green-600 text-sm">
+              {resumeJSON.sections?.reduce((total, section) => total + section.entries.length, 0) || 0} total entries
+            </p>
+          </div>
+
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-purple-800">Bullets</h4>
+            <p className="text-purple-600 text-sm">
+              {resumeJSON.sections?.reduce((total, section) => 
+                total + section.entries.reduce((entryTotal, entry) => 
+                  entryTotal + (entry.bullets?.length || 0), 0
+                ), 0) || 0} total bullets
+            </p>
+            <p className="text-purple-600 text-sm">
+              {resumeJSON.sections?.reduce((total, section) => 
+                total + section.entries.reduce((entryTotal, entry) => 
+                  entryTotal + (entry.bullets?.filter(b => b.enabled)?.length || 0), 0
+                ), 0) || 0} enabled bullets
+            </p>
+          </div>
+
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-orange-800">AI Content</h4>
+            <p className="text-orange-600 text-sm">
+              {resumeJSON.sections?.reduce((total, section) => 
+                total + section.entries.reduce((entryTotal, entry) => 
+                  entryTotal + (entry.bullets?.filter(b => b.origin === 'ai')?.length || 0), 0
+                ), 0) || 0} AI bullets
+            </p>
+            <p className="text-orange-600 text-sm">
+              {resumeJSON.sections?.reduce((total, section) => 
+                total + section.entries.reduce((entryTotal, entry) => 
+                  entryTotal + (entry.bullets?.filter(b => b.origin === 'ai' && b.enabled)?.length || 0), 0
+                ), 0) || 0} enabled AI bullets
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -71,21 +71,44 @@ const SkillChecklist = () => {
 
        // Process new bullets - flatten all categories into a single array
        const allNewBullets = newBullets.flatMap(category => 
-         category.bullets.map(bullet => ({
-           id: generateId(),
-           text: bullet,
-           category: category.category,
-           isEnabled: false // All generated bullets start as disabled
-         }))
+         category.bullets.map(bullet => {
+           const id = generateId();
+           console.log('Generated bullet ID:', id, 'for text:', bullet.substring(0, 50) + '...');
+           return {
+             id: id,
+             text: bullet,
+             category: category.category,
+             isEnabled: false // All generated bullets start as disabled
+           };
+         })
        );
 
        // Extract original bullets from resume text
        const originalBullets = extractBulletPoints(state.originalResume);
 
+       // Add AI bullets to the resume JSON structure
+       if (allNewBullets.length > 0 && state.resumeJSON.sections) {
+         // Find the Professional Experience section
+         const experienceSectionIndex = state.resumeJSON.sections.findIndex(section => 
+           section.title === 'Professional Experience'
+         );
+         
+         if (experienceSectionIndex !== -1 && state.resumeJSON.sections[experienceSectionIndex].entries.length > 0) {
+           // Add AI bullets to the first experience entry
+           const aiBullets = allNewBullets.map(bullet => ({
+             id: bullet.id,
+             text: bullet.text,
+             origin: 'ai',
+             enabled: false
+           }));
+           
+           actions.addAIBullets(experienceSectionIndex, 0, aiBullets);
+         }
+       }
+       
        actions.setGeneratedBullets(allNewBullets);
-       actions.setOriginalBullets(originalBullets);
        actions.setCoverLetter(coverLetter);
-       actions.setCurrentStep('generated');
+       actions.setCurrentStep('editor');
       
       toast.success('Documents generated successfully!');
 

@@ -1,13 +1,24 @@
 'use client';
 
-import { createContext, useContext, useReducer } from 'react';
+import { createContext, useContext, useReducer, useEffect } from 'react';
 
-// Initial state
+// Initial state with new canonical JSON structure
 const initialState = {
   // Form data
   jobDescription: '',
   originalResume: '',
-  resumeJSON: {}, // Structured resume data
+  resumeJSON: {
+    metadata: {
+      name: '',
+      contact: {
+        phone: '',
+        email: '',
+        links: []
+      },
+      summary: ''
+    },
+    sections: []
+  },
   
   // Skills
   suggestedSkills: [],
@@ -15,7 +26,6 @@ const initialState = {
   
   // Generated content
   generatedBullets: [],
-  originalBullets: [], // Array of original resume bullets with toggle state
   coverLetter: '',
   
   // UI state
@@ -35,16 +45,20 @@ const ACTIONS = {
   SET_SUGGESTED_SKILLS: 'SET_SUGGESTED_SKILLS',
   SET_SELECTED_SKILLS: 'SET_SELECTED_SKILLS',
   SET_GENERATED_BULLETS: 'SET_GENERATED_BULLETS',
-  SET_ORIGINAL_BULLETS: 'SET_ORIGINAL_BULLETS',
   SET_COVER_LETTER: 'SET_COVER_LETTER',
   SET_INPUT_SUBMITTED: 'SET_INPUT_SUBMITTED',
   SET_GENERATING: 'SET_GENERATING',
   SET_CURRENT_STEP: 'SET_CURRENT_STEP',
   SET_ERROR: 'SET_ERROR',
   RESET_STATE: 'RESET_STATE',
-  TOGGLE_GENERATED_BULLET: 'TOGGLE_GENERATED_BULLET',
-  TOGGLE_ORIGINAL_BULLET: 'TOGGLE_ORIGINAL_BULLET',
-  UPDATE_BULLET_POSITION: 'UPDATE_BULLET_POSITION'
+  TOGGLE_BULLET: 'TOGGLE_BULLET',
+  REORDER_BULLETS: 'REORDER_BULLETS',
+  REORDER_ENTRIES: 'REORDER_ENTRIES',
+  REORDER_SECTIONS: 'REORDER_SECTIONS',
+  EDIT_JOB_TITLE: 'EDIT_JOB_TITLE',
+  ADD_AI_BULLETS: 'ADD_AI_BULLETS',
+  LOAD_FROM_STORAGE: 'LOAD_FROM_STORAGE',
+  SAVE_TO_STORAGE: 'SAVE_TO_STORAGE'
 };
 
 // Reducer function
@@ -68,9 +82,6 @@ function appReducer(state, action) {
     case ACTIONS.SET_GENERATED_BULLETS:
       return { ...state, generatedBullets: action.payload };
       
-    case ACTIONS.SET_ORIGINAL_BULLETS:
-      return { ...state, originalBullets: action.payload };
-      
     case ACTIONS.SET_COVER_LETTER:
       return { ...state, coverLetter: action.payload };
       
@@ -89,31 +100,80 @@ function appReducer(state, action) {
     case ACTIONS.RESET_STATE:
       return initialState;
       
-         case ACTIONS.TOGGLE_GENERATED_BULLET:
-       console.log('Reducer: TOGGLE_GENERATED_BULLET action received:', action.payload);
-       console.log('Reducer: Current generated bullets:', state.generatedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
-       const updatedGeneratedBullets = state.generatedBullets.map(bullet => 
-         bullet.id === action.payload.id 
-           ? { ...bullet, isEnabled: action.payload.isEnabled }
-           : bullet
-       );
-       console.log('Reducer: Updated generated bullets:', updatedGeneratedBullets.map(b => ({ id: b.id, isEnabled: b.isEnabled })));
-       return { ...state, generatedBullets: updatedGeneratedBullets };
+    case ACTIONS.TOGGLE_BULLET:
+      const { sectionIndex, entryIndex, bulletId, enabled } = action.payload;
+      const updatedResumeJSON = { ...state.resumeJSON };
+      const section = updatedResumeJSON.sections[sectionIndex];
+      const entry = section.entries[entryIndex];
+      const bullet = entry.bullets.find(b => b.id === bulletId);
+      if (bullet) {
+        bullet.enabled = enabled;
+      }
+      return { ...state, resumeJSON: updatedResumeJSON };
       
-    case ACTIONS.TOGGLE_ORIGINAL_BULLET:
-      const updatedOriginalBullets = state.originalBullets.map(bullet => 
-        bullet.id === action.payload.id 
-          ? { ...bullet, isEnabled: action.payload.isEnabled }
-          : bullet
-      );
-      return { ...state, originalBullets: updatedOriginalBullets };
+    case ACTIONS.REORDER_BULLETS:
+      const { sectionIdx, entryIdx, sourceIndex, destinationIndex } = action.payload;
+      const reorderedResumeJSON = { ...state.resumeJSON };
+      const reorderSection = reorderedResumeJSON.sections[sectionIdx];
+      const reorderEntry = reorderSection.entries[entryIdx];
+      const [movedBullet] = reorderEntry.bullets.splice(sourceIndex, 1);
+      reorderEntry.bullets.splice(destinationIndex, 0, movedBullet);
+      return { ...state, resumeJSON: reorderedResumeJSON };
       
-    case ACTIONS.UPDATE_BULLET_POSITION:
-      const { sourceIndex, destinationIndex } = action.payload;
-      const newBullets = [...state.generatedBullets];
-      const [movedBullet] = newBullets.splice(sourceIndex, 1);
-      newBullets.splice(destinationIndex, 0, movedBullet);
-      return { ...state, generatedBullets: newBullets };
+    case ACTIONS.REORDER_ENTRIES:
+      const { sectionIndex: secIdx, sourceIndex: srcIdx, destinationIndex: destIdx } = action.payload;
+      const reorderedEntriesJSON = { ...state.resumeJSON };
+      const reorderEntriesSection = reorderedEntriesJSON.sections[secIdx];
+      const [movedEntry] = reorderEntriesSection.entries.splice(srcIdx, 1);
+      reorderEntriesSection.entries.splice(destIdx, 0, movedEntry);
+      return { ...state, resumeJSON: reorderedEntriesJSON };
+      
+    case ACTIONS.REORDER_SECTIONS:
+      const { sourceIndex: srcSecIdx, destinationIndex: destSecIdx } = action.payload;
+      const reorderedSectionsJSON = { ...state.resumeJSON };
+      const [movedSection] = reorderedSectionsJSON.sections.splice(srcSecIdx, 1);
+      reorderedSectionsJSON.sections.splice(destSecIdx, 0, movedSection);
+      return { ...state, resumeJSON: reorderedSectionsJSON };
+      
+    case ACTIONS.EDIT_JOB_TITLE:
+      const { sectionIndex: editSecIdx, entryIndex: editEntryIdx, newTitle } = action.payload;
+      const editedResumeJSON = { ...state.resumeJSON };
+      const editSection = editedResumeJSON.sections[editSecIdx];
+      const editEntry = editSection.entries[editEntryIdx];
+      if (editEntry.job_title !== undefined) {
+        editEntry.job_title = newTitle;
+      }
+      return { ...state, resumeJSON: editedResumeJSON };
+      
+    case ACTIONS.ADD_AI_BULLETS:
+      const { sectionIndex: aiSecIdx, entryIndex: aiEntryIdx, aiBullets } = action.payload;
+      const aiUpdatedResumeJSON = { ...state.resumeJSON };
+      const aiSection = aiUpdatedResumeJSON.sections[aiSecIdx];
+      const aiEntry = aiSection.entries[aiEntryIdx];
+      
+      // Check for existing bullet IDs to avoid duplicates
+      const existingIds = new Set(aiEntry.bullets.map(b => b.id));
+      
+      aiBullets.forEach(bullet => {
+        // Only add if the ID doesn't already exist
+        if (!existingIds.has(bullet.id)) {
+          aiEntry.bullets.push({
+            id: bullet.id,
+            text: bullet.text,
+            origin: 'ai',
+            enabled: false
+          });
+          existingIds.add(bullet.id); // Add to set to prevent duplicates within this batch
+        }
+      });
+      return { ...state, resumeJSON: aiUpdatedResumeJSON };
+      
+    case ACTIONS.LOAD_FROM_STORAGE:
+      return { ...state, ...action.payload };
+      
+    case ACTIONS.SAVE_TO_STORAGE:
+      // This action doesn't change state, just triggers localStorage save
+      return state;
       
     default:
       return state;
@@ -126,6 +186,28 @@ const AppContext = createContext();
 // Provider component
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem('resumeBuilderState');
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+        dispatch({ type: ACTIONS.LOAD_FROM_STORAGE, payload: parsedState });
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+    }
+  }, []);
+
+  // Save to localStorage whenever state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('resumeBuilderState', JSON.stringify(state));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }, [state]);
 
   // Action creators
   const actions = {
@@ -147,9 +229,6 @@ export function AppProvider({ children }) {
     setGeneratedBullets: (bullets) => 
       dispatch({ type: ACTIONS.SET_GENERATED_BULLETS, payload: bullets }),
       
-    setOriginalBullets: (bullets) => 
-      dispatch({ type: ACTIONS.SET_ORIGINAL_BULLETS, payload: bullets }),
-      
     setCoverLetter: (letter) => 
       dispatch({ type: ACTIONS.SET_COVER_LETTER, payload: letter }),
       
@@ -168,25 +247,46 @@ export function AppProvider({ children }) {
     resetState: () => 
       dispatch({ type: ACTIONS.RESET_STATE }),
       
-     toggleGeneratedBullet: (id, isEnabled) => {
-       console.log('Action creator called with:', { id, isEnabled });
-       dispatch({ 
-         type: ACTIONS.TOGGLE_GENERATED_BULLET, 
-         payload: { id, isEnabled } 
-       });
-     },
-      
-    toggleOriginalBullet: (id, isEnabled) => 
+    toggleBullet: (sectionIndex, entryIndex, bulletId, enabled) => 
       dispatch({ 
-        type: ACTIONS.TOGGLE_ORIGINAL_BULLET, 
-        payload: { id, isEnabled } 
+        type: ACTIONS.TOGGLE_BULLET, 
+        payload: { sectionIndex, entryIndex, bulletId, enabled } 
       }),
       
-    updateBulletPosition: (sourceIndex, destinationIndex) => 
+    reorderBullets: (sectionIndex, entryIndex, sourceIndex, destinationIndex) => 
       dispatch({ 
-        type: ACTIONS.UPDATE_BULLET_POSITION, 
+        type: ACTIONS.REORDER_BULLETS, 
+        payload: { sectionIdx: sectionIndex, entryIdx: entryIndex, sourceIndex, destinationIndex } 
+      }),
+      
+    reorderEntries: (sectionIndex, sourceIndex, destinationIndex) => 
+      dispatch({ 
+        type: ACTIONS.REORDER_ENTRIES, 
+        payload: { sectionIndex, sourceIndex, destinationIndex } 
+      }),
+      
+    reorderSections: (sourceIndex, destinationIndex) => 
+      dispatch({ 
+        type: ACTIONS.REORDER_SECTIONS, 
         payload: { sourceIndex, destinationIndex } 
-      })
+      }),
+      
+    editJobTitle: (sectionIndex, entryIndex, newTitle) => 
+      dispatch({ 
+        type: ACTIONS.EDIT_JOB_TITLE, 
+        payload: { sectionIndex, entryIndex, newTitle } 
+      }),
+      
+    addAIBullets: (sectionIndex, entryIndex, aiBullets) => 
+      dispatch({ 
+        type: ACTIONS.ADD_AI_BULLETS, 
+        payload: { sectionIndex, entryIndex, aiBullets } 
+      }),
+      
+    clearStorage: () => {
+      localStorage.removeItem('resumeBuilderState');
+      dispatch({ type: ACTIONS.RESET_STATE });
+    }
   };
 
   const value = {

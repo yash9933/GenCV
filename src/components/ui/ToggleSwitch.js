@@ -2,26 +2,32 @@
  * Reusable Toggle Switch Component
  */
 const ToggleSwitch = ({ 
-  enabled, 
+  checked, 
   onChange, 
   disabled = false, 
   className = '',
   ...props 
 }) => {
   const toggleClasses = `
-    toggle-switch ${enabled ? 'enabled' : 'disabled'}
+    toggle-switch ${checked ? 'enabled' : 'disabled'}
     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
     ${className}
   `;
   
   const thumbClasses = `
-    toggle-switch-thumb ${enabled ? 'enabled' : 'disabled'}
+    toggle-switch-thumb ${checked ? 'enabled' : 'disabled'}
   `;
+  
+  const handleClick = () => {
+    if (!disabled && onChange) {
+      onChange(!checked);
+    }
+  };
   
   return (
     <button
       type="button"
-      onClick={onChange}
+      onClick={handleClick}
       disabled={disabled}
       className={toggleClasses}
       {...props}

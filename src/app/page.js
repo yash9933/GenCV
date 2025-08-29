@@ -3,9 +3,8 @@
 import { AppProvider, useAppContext } from '../context/AppContext';
 import ResumeInputForm from '../components/ResumeInputForm';
 import SkillChecklist from '../components/SkillChecklist';
-import GeneratedResumeView from '../components/GeneratedResumeView';
-import GeneratedCoverLetter from '../components/GeneratedCoverLetter';
 import ResumeJSONViewer from '../components/ResumeJSONViewer';
+import ResumeEditor from '../components/ResumeEditor';
 
 /**
  * Main Application Component
@@ -28,13 +27,8 @@ function AppContent() {
           </div>
         );
         
-      case 'generated':
-        return (
-          <div className="space-y-8">
-            <GeneratedResumeView />
-            <GeneratedCoverLetter />
-          </div>
-        );
+      case 'editor':
+        return <ResumeEditor />;
         
       default:
         return <ResumeInputForm />;
@@ -72,7 +66,7 @@ function AppContent() {
               <div className="flex items-center space-x-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   state.currentStep === 'skills' ? 'bg-blue-600 text-white' : 
-                  state.currentStep === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                  state.currentStep === 'editor' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
                   2
                 </div>
@@ -83,11 +77,11 @@ function AppContent() {
               
               <div className="flex items-center space-x-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  state.currentStep === 'generated' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                  state.currentStep === 'editor' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
                   3
                 </div>
-                <span className="text-sm text-gray-600">Generate</span>
+                <span className="text-sm text-gray-600">Edit</span>
               </div>
             </div>
           </div>

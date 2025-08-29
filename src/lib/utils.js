@@ -1,4 +1,5 @@
 
+
 /**
  * Utility functions for the AI Resume Builder (patched)
  * Changes:
@@ -71,64 +72,52 @@ export const formatResumeText = (text) => {
     .trim();
 };
 
-export const generateId = () => Math.random().toString(36).substr(2, 9);
+import { v4 as uuidv4 } from 'uuid';
+
+// UUID-based ID generation to ensure global uniqueness
+export const generateId = () => uuidv4();
 
 // -------------------- NEW / PATCHED CORE --------------------
 
 /**
- * Extract resume into structured JSON format (PATCHED)
- * - Handles "PROFESSIONAL EXPERIENCE" headers
- * - Robust experience / education parsing for the provided sample
+ * Extract resume into structured JSON format (UPDATED for new canonical schema)
+ * Returns the new canonical JSON schema with proper structure
  */
 export const extractResumeToJSON = (resumeText) => {
   if (!resumeText) return {};
 
   const resume = {
-    personalInfo: {
+    metadata: {
       name: '',
-      email: '',
-      phone: '',
-      location: '',
-      linkedin: '',
-      website: ''
+      contact: {
+        phone: '',
+        email: '',
+        links: []
+      },
+      summary: ''
     },
-    summary: '',
-    experience: [],
-    education: [],
-    skills: { technical: [], soft: [] },
-    projects: [],
-    certifications: [],
-    languages: [],
-    awards: [],
-    volunteer: [],
-    interests: []
+    sections: []
   };
 
   const normalized = formatResumeText(resumeText);
   const allLines = normalized.split('\n').map(l => l.trim());
 
   // ---------- Contact parsing ----------
-  if (allLines.length > 0) resume.personalInfo.name = allLines[0];
+  if (allLines.length > 0) resume.metadata.name = allLines[0];
   if (allLines.length > 1) {
     const contactLine = allLines[1];
     // email
     const emailMatch = contactLine.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/);
-    if (emailMatch) resume.personalInfo.email = emailMatch[0];
+    if (emailMatch) resume.metadata.contact.email = emailMatch[0];
     // phone
     const phoneMatch = contactLine.match(/(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
-    if (phoneMatch) resume.personalInfo.phone = phoneMatch[0];
-    // linkedin / github placeholders / website
-    if (/linkedin/i.test(contactLine)) resume.personalInfo.linkedin = 'LinkedIn';
-    // Prefer GitHub as website if present; else Portfolio if present
-    if (/github/i.test(contactLine)) {
-      resume.personalInfo.website = 'GitHub';
-    } else if (/portfolio/i.test(contactLine)) {
-      resume.personalInfo.website = 'Portfolio';
-    }
+    if (phoneMatch) resume.metadata.contact.phone = phoneMatch[0];
+    // linkedin / github placeholders
+    if (/linkedin/i.test(contactLine)) resume.metadata.contact.links.push('LinkedIn');
+    if (/github/i.test(contactLine)) resume.metadata.contact.links.push('GitHub');
   }
 
   // ---------- Sectionize text ----------
-  // Accept multiple variants, anchored to line start
   const HEADER_RE = /^(SUMMARY|PROFESSIONAL SUMMARY|OBJECTIVE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE|EXPERIENCE|EDUCATION|PROJECTS|TECHNICAL SKILLS|SKILLS|CERTIFICATIONS|LANGUAGES|AWARDS|VOLUNTEER|INTERESTS)\s*$/i;
 
   const buckets = {};
@@ -147,51 +136,61 @@ export const extractResumeToJSON = (resumeText) => {
 
   // ---------- Summary ----------
   if (buckets['SUMMARY'] && buckets['SUMMARY'].length) {
-    resume.summary = buckets['SUMMARY'].join(' ').trim();
+    resume.metadata.summary = buckets['SUMMARY'].join(' ').trim();
   } else if (buckets['PROFESSIONAL SUMMARY']) {
-    resume.summary = buckets['PROFESSIONAL SUMMARY'].join(' ').trim();
+    resume.metadata.summary = buckets['PROFESSIONAL SUMMARY'].join(' ').trim();
   } else if (buckets['OBJECTIVE']) {
-    resume.summary = buckets['OBJECTIVE'].join(' ').trim();
+    resume.metadata.summary = buckets['OBJECTIVE'].join(' ').trim();
   }
 
-  // ---------- Experience ----------
+  // ---------- Professional Experience Section ----------
   const expLines = (buckets['PROFESSIONAL EXPERIENCE'] || buckets['WORK EXPERIENCE'] || buckets['EXPERIENCE'] || []);
-  resume.experience = extractExperienceSection(expLines);
+  if (expLines.length > 0) {
+    const experienceSection = {
+      title: 'Professional Experience',
+      entries: extractExperienceEntries(expLines)
+    };
+    resume.sections.push(experienceSection);
+  }
 
-  // ---------- Education ----------
+  // ---------- Education Section ----------
   const eduLines = buckets['EDUCATION'] || [];
-  resume.education = extractEducationSection(eduLines);
+  if (eduLines.length > 0) {
+    const educationSection = {
+      title: 'Education',
+      entries: extractEducationEntries(eduLines)
+    };
+    resume.sections.push(educationSection);
+  }
 
-  // ---------- Skills ----------
-  const skillLines = (buckets['TECHNICAL SKILLS'] || buckets['SKILLS'] || []);
-  const skillsObj = extractSkillsSection(skillLines);
-  resume.skills.technical = skillsObj.technical;
-  resume.skills.soft = skillsObj.soft;
-
-  // ---------- Projects ----------
+  // ---------- Projects Section ----------
   const projectLines = buckets['PROJECTS'] || [];
-  resume.projects = extractProjectsSection(projectLines);
+  if (projectLines.length > 0) {
+    const projectsSection = {
+      title: 'Projects',
+      entries: extractProjectEntries(projectLines)
+    };
+    resume.sections.push(projectsSection);
+  }
 
-  // ---------- Other simple sections ----------
-  resume.certifications = extractCertificationsSection(buckets['CERTIFICATIONS'] || []);
-  resume.languages = extractLanguagesSection(buckets['LANGUAGES'] || []);
-  resume.awards = extractAwardsSection(buckets['AWARDS'] || []);
-  resume.volunteer = extractVolunteerSection(buckets['VOLUNTEER'] || []);
-  resume.interests = extractInterestsSection(buckets['INTERESTS'] || []);
+  // ---------- Skills Section ----------
+  const skillLines = (buckets['TECHNICAL SKILLS'] || buckets['SKILLS'] || []);
+  if (skillLines.length > 0) {
+    const skillsSection = {
+      title: 'Skills',
+      entries: extractSkillEntries(skillLines)
+    };
+    resume.sections.push(skillsSection);
+  }
 
   return resume;
 };
 
 /**
- * Extract experience section (PATCHED)
- * Supports:
- *   Job line: "Title | Company, City, ST"
- *   Next line: "MM/YYYY - Present" (or "MM/YYYY - MM/YYYY")
- *   Bullets: lines starting with • - *
- *   Tech stack: "Tech Stack: ..."
+ * Extract experience entries with the new canonical structure
  */
-const extractExperienceSection = (lines) => {
-  const experiences = [];
+const extractExperienceEntries = (lines) => {
+  const entries = [];
   let current = null;
 
   const isBullet = (s) => /^[•\-\*]\s+/.test(s);
@@ -203,11 +202,18 @@ const extractExperienceSection = (lines) => {
     if (!line) continue;
 
     if (isJobHeader(line)) {
-      if (current) experiences.push(current);
-      current = { title: '', company: '', location: '', duration: '', bullets: [], techStack: '' };
+      if (current) entries.push(current);
+      current = { 
+        job_title: '', 
+        company: '', 
+        location: '', 
+        date_range: '', 
+        bullets: [], 
+        tech_stack: [] 
+      };
 
       const parts = line.split('|').map(p => p.trim());
-      current.title = parts[0] || '';
+      current.job_title = parts[0] || '';
 
       const right = parts[1] || '';
       if (right) {
@@ -224,7 +230,7 @@ const extractExperienceSection = (lines) => {
       let k = i + 1;
       while (k < lines.length && !lines[k].trim()) k++;
       if (k < lines.length && isDateLine(lines[k].trim())) {
-        current.duration = lines[k].trim();
+        current.date_range = lines[k].trim();
         i = k; // advance past date line
       }
       continue;
@@ -233,31 +239,39 @@ const extractExperienceSection = (lines) => {
     if (current) {
       if (isDateLine(line)) {
         // In case the date line didn't directly follow header
-        current.duration = line;
+        current.date_range = line;
       } else if (/^tech stack:/i.test(line)) {
-        current.techStack = line.replace(/^tech stack:\s*/i, '').trim();
+        const techStack = line.replace(/^tech stack:\s*/i, '').trim();
+        current.tech_stack = techStack.split(/[,;]\s*/).map(s => s.trim()).filter(Boolean);
       } else if (isBullet(line)) {
-        current.bullets.push(line.replace(/^[•\-\*]\s+/, '').trim());
+        const bulletText = line.replace(/^[•\-\*]\s+/, '').trim();
+        current.bullets.push({
+          id: generateId(),
+          text: bulletText,
+          origin: 'original',
+          enabled: true
+        });
       } else {
         // Treat as a free-form bullet/description line
-        current.bullets.push(line.trim());
+        current.bullets.push({
+          id: generateId(),
+          text: line.trim(),
+          origin: 'original',
+          enabled: true
+        });
       }
     }
   }
 
-  if (current) experiences.push(current);
-  return experiences;
+  if (current) entries.push(current);
+  return entries;
 };
 
 /**
- * Extract education section (PATCHED)
- * Supports:
- *   "Degree, Institution, Location"
- *   followed by a date-only line "MM/YYYY"
- * If multiple degree lines are followed by multiple date lines, dates are assigned in order.
+ * Extract education entries with the new canonical structure
  */
-const extractEducationSection = (lines) => {
-  const education = [];
+const extractEducationEntries = (lines) => {
+  const entries = [];
   const dateOnly = /^\d{1,2}\/\d{4}$/;
   const degreeLine = /^(.*?),\s*(.*?)(?:,\s*(.*))?$/; // degree, institution, [location]
 
@@ -272,32 +286,135 @@ const extractEducationSection = (lines) => {
       const degree = (m[1] || '').trim();
       const institution = (m[2] || '').trim();
       const location = (m[3] || '').trim();
-      education.push({ degree, institution, duration: '', gpa: '', location });
-      lastIdxNeedingDate = education.length - 1;
+      
+      entries.push({ 
+        degree, 
+        institution, 
+        location, 
+        date: '' 
+      });
+      lastIdxNeedingDate = entries.length - 1;
       continue;
     }
 
     if (dateOnly.test(line)) {
-      // Assign to the earliest entry without a duration
-      const idx = education.findIndex(e => !e.duration);
+      // Assign to the earliest entry without a date
+      const idx = entries.findIndex(e => !e.date);
       if (idx !== -1) {
-        education[idx].duration = line;
+        entries[idx].date = line;
       } else if (lastIdxNeedingDate >= 0) {
-        education[lastIdxNeedingDate].duration = line;
+        entries[lastIdxNeedingDate].date = line;
       }
       continue;
     }
-
-    // GPA parsing if present
-    if (/gpa/i.test(line) && education.length) {
-      education[education.length - 1].gpa = line.trim();
-    }
   }
 
-  return education;
+  return entries;
 };
 
 // -------------------- Original helpers kept as-is --------------------
+
+/**
+ * Extract project entries with the new canonical structure
+ */
+const extractProjectEntries = (lines) => {
+  const entries = [];
+  let current = null;
+
+  const isBullet = (s) => /^[•\-\*]\s+/.test(s);
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (trimmed.includes('|') && !isBullet(trimmed)) {
+      if (current) entries.push(current);
+      const parts = trimmed.split('|').map(p => p.trim());
+      current = { 
+        name: parts[0] || '', 
+        tech_stack: parts[1] ? parts[1].split(/[,;]\s*/).map(s => s.trim()).filter(Boolean) : [], 
+        bullets: [] 
+      };
+    } else if (isBullet(trimmed)) {
+      if (current) {
+        const bulletText = trimmed.replace(/^[•\-\*]\s+/, '').trim();
+        current.bullets.push({
+          id: generateId(),
+          text: bulletText,
+          origin: 'original',
+          enabled: true
+        });
+      }
+    } else if (current) {
+      current.bullets.push({
+        id: generateId(),
+        text: trimmed,
+        origin: 'original',
+        enabled: true
+      });
+    }
+  });
+
+  if (current) entries.push(current);
+  return entries;
+};
+
+/**
+ * Extract skill entries with the new canonical structure
+ */
+const extractSkillEntries = (lines) => {
+  const technicalKeywords = [
+    'javascript', 'python', 'java', 'react', 'node.js', 'sql', 'aws', 'docker',
+    'kubernetes', 'git', 'html', 'css', 'typescript', 'angular', 'vue.js',
+    'mongodb', 'postgresql', 'redis', 'kafka', 'microservices', 'ci/cd',
+    'jenkins', 'terraform', 'ansible', 'linux', 'machine learning', 'data analysis',
+    'c++', 'c#', 'rust', 'graphql', 'nosql', 'mysql', 'mongodb',
+    'html5', 'json', 'adobe flex', 'restful apis', 'agile', 'scrum', 'jira',
+    'confluence', 'visual studio code', 'github',
+    'amazon aws', 'google gcp', 'microsoft azure', 'next.js', 'vercel', 'firebase',
+    'express.js', 'mern', 'paypal', 'stripe', 'ec3', 'web3', 'blockchain',
+    'websockets', 'jwt', 'oauth2', 'mockito', 'junit', 'dynamodb', 'redis'
+  ];
+
+  const technicalSkills = [];
+  const softSkills = [];
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    if (/:$/.test(trimmed.toLowerCase()) || trimmed.includes(':')) {
+      // category header line; skip values on header line
+      return;
+    }
+    const parts = trimmed.split(/[,;]\s*/).map(s => s.trim()).filter(Boolean);
+    parts.forEach(skill => {
+      const lower = skill.toLowerCase();
+      if (technicalKeywords.some(k => lower.includes(k))) {
+        technicalSkills.push(skill);
+      } else {
+        softSkills.push(skill);
+      }
+    });
+  });
+
+  const entries = [];
+  
+  if (technicalSkills.length > 0) {
+    entries.push({
+      category: 'Technical Skills',
+      skills: [...new Set(technicalSkills)]
+    });
+  }
+  
+  if (softSkills.length > 0) {
+    entries.push({
+      category: 'Soft Skills',
+      skills: [...new Set(softSkills)]
+    });
+  }
+
+  return entries;
+};
 
 const extractSkillsSection = (lines) => {
   const skills = { technical: [], soft: [] };
@@ -396,7 +513,6 @@ export const extractBulletPoints = (resumeText) => {
   ];
 
   const bullets = [];
-  let id = 1;
 
   bulletPatterns.forEach(pattern => {
     const matches = resumeText.match(pattern);
@@ -407,7 +523,7 @@ export const extractBulletPoints = (resumeText) => {
           const text = textMatch[1].trim();
           if (text && text.length > 10) {
             bullets.push({
-              id: `original-${id++}`,
+              id: generateId(),
               text,
               isEnabled: true,
               type: 'original'
@@ -426,7 +542,7 @@ export const extractBulletPoints = (resumeText) => {
         const cleanText = sentence.trim();
         if (cleanText && cleanText.length > 10) {
           bullets.push({
-            id: `original-${sIdx}-${sentIdx}`,
+            id: generateId(),
             text: cleanText,
             isEnabled: true,
             type: 'original'
@@ -437,7 +553,7 @@ export const extractBulletPoints = (resumeText) => {
     if (bullets.length === 0) {
       const cleanText = resumeText.trim();
       if (cleanText && cleanText.length > 10) {
-        bullets.push({ id: 'original-1', text: cleanText, isEnabled: true, type: 'original' });
+        bullets.push({ id: generateId(), text: cleanText, isEnabled: true, type: 'original' });
       }
     }
   }
@@ -584,4 +700,45 @@ export const generateResumePreview = (data) => {
     }
   }
   return preview;
+};
+
+// Import LaTeX template module
+import { jsonToLaTeX } from './latexTemplate.js';
+
+/**
+ * Convert canonical JSON to LaTeX format
+ * Filters only enabled bullets and creates LaTeX source
+ */
+export { jsonToLaTeX };
+
+
+
+/**
+ * Download LaTeX file
+ */
+export const downloadLaTeX = (resumeJSON, filename = 'resume.tex') => {
+  const latex = jsonToLaTeX(resumeJSON);
+  downloadFile(latex, filename, 'application/x-tex');
+};
+
+/**
+ * Get filtered JSON (only enabled bullets)
+ */
+export const getFilteredJSON = (resumeJSON) => {
+  if (!resumeJSON || !resumeJSON.sections) {
+    return resumeJSON;
+  }
+
+  const filtered = {
+    ...resumeJSON,
+    sections: resumeJSON.sections.map(section => ({
+      ...section,
+      entries: section.entries.map(entry => ({
+        ...entry,
+        bullets: entry.bullets ? entry.bullets.filter(bullet => bullet.enabled) : []
+      }))
+    }))
+  };
+
+  return filtered;
 };
