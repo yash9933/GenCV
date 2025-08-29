@@ -96,7 +96,7 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
           ) : (
             <div className="flex items-center space-x-2">
               <h4 className="font-medium text-gray-900">
-                {entry.job_title || entry.name || entry.degree || 'Untitled'}
+                {entry.job_title || entry.name || entry.degree || entry.category || 'Untitled'}
               </h4>
               {(entry.job_title || entry.name) && (
                 <button
@@ -138,26 +138,43 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
         </div>
       )}
 
-             {/* Bullets */}
-       {entry.bullets && Array.isArray(entry.bullets) && entry.bullets.length > 0 && (
-         <div>
-           <div className="text-sm text-gray-600 mb-2">Bullet Points:</div>
-           <div className="space-y-1">
-             <SortableContext items={entry.bullets.map(bullet => bullet.id)} strategy={verticalListSortingStrategy}>
-               {entry.bullets.map((bullet, bulletIndex) => (
-                 <SortableBullet
-                   key={bullet.id}
-                   bullet={bullet}
-                   sectionIndex={sectionIndex}
-                   entryIndex={entryIndex}
-                   bulletIndex={bulletIndex}
-                   onToggle={onToggleBullet}
-                 />
-               ))}
-             </SortableContext>
-           </div>
-         </div>
-       )}
+      {/* Skills */}
+      {entry.skills && Array.isArray(entry.skills) && entry.skills.length > 0 && (
+        <div className="mb-3">
+          <div className="text-sm text-gray-600 mb-1">Skills:</div>
+          <div className="flex flex-wrap gap-1">
+            {entry.skills.map((skill, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bullets */}
+      {entry.bullets && Array.isArray(entry.bullets) && entry.bullets.length > 0 && (
+        <div>
+          <div className="text-sm text-gray-600 mb-2">Bullet Points:</div>
+          <div className="space-y-1">
+            <SortableContext items={entry.bullets.map(bullet => bullet.id)} strategy={verticalListSortingStrategy}>
+              {entry.bullets.map((bullet, bulletIndex) => (
+                <SortableBullet
+                  key={bullet.id}
+                  bullet={bullet}
+                  sectionIndex={sectionIndex}
+                  entryIndex={entryIndex}
+                  bulletIndex={bulletIndex}
+                  onToggle={onToggleBullet}
+                />
+              ))}
+            </SortableContext>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
