@@ -176,11 +176,25 @@ export const extractResumeToJSON = (resumeText) => {
   // ---------- Skills Section ----------
   const skillLines = (buckets['TECHNICAL SKILLS'] || buckets['SKILLS'] || []);
   if (skillLines.length > 0) {
-    const skillsSection = {
-      title: 'Skills',
-      entries: extractSkillEntries(skillLines)
-    };
-    resume.sections.push(skillsSection);
+    // Parse labeled skills into top-level skills object and section entries
+    const labeledSkills = parseLabeledSkills(skillLines);
+    if (Object.keys(labeledSkills).length > 0) {
+      // Attach to top-level for API/consumers that expect it
+      resume.skills = labeledSkills;
+      // Also create a Skills section for the editor
+      const entries = Object.keys(labeledSkills).map(category => ({
+        category,
+        skills: labeledSkills[category]
+      }));
+      resume.sections.push({ title: 'Skills', entries });
+    } else {
+      // Fallback to legacy classifier
+      const skillsSection = {
+        title: 'Skills',
+        entries: extractSkillEntries(skillLines)
+      };
+      resume.sections.push(skillsSection);
+    }
   }
 
   return resume;
@@ -252,13 +266,21 @@ const extractExperienceEntries = (lines) => {
           enabled: true
         });
       } else {
-        // Treat as a free-form bullet/description line
-        current.bullets.push({
-          id: generateId(),
-          text: line.trim(),
-          origin: 'original',
-          enabled: true
-        });
+        // Continuation line: append to the last bullet if present; else start a new bullet
+        const continuation = line.trim();
+        if (continuation) {
+          if (current.bullets.length > 0) {
+            const last = current.bullets[current.bullets.length - 1];
+            last.text = `${last.text} ${continuation}`.replace(/\s+/g, ' ').trim();
+          } else {
+            current.bullets.push({
+              id: generateId(),
+              text: continuation,
+              origin: 'original',
+              enabled: true
+            });
+          }
+        }
       }
     }
   }
@@ -323,21 +345,21 @@ const extractProjectEntries = (lines) => {
 
   const isBullet = (s) => /^[•\-\*]\s+/.test(s);
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
 
-    if (trimmed.includes('|') && !isBullet(trimmed)) {
+    if (line.includes('|') && !isBullet(line)) {
       if (current) entries.push(current);
-      const parts = trimmed.split('|').map(p => p.trim());
+      const parts = line.split('|').map(p => p.trim());
       current = { 
         name: parts[0] || '', 
         tech_stack: parts[1] ? parts[1].split(/[,;]\s*/).map(s => s.trim()).filter(Boolean) : [], 
         bullets: [] 
       };
-    } else if (isBullet(trimmed)) {
+    } else if (isBullet(line)) {
       if (current) {
-        const bulletText = trimmed.replace(/^[•\-\*]\s+/, '').trim();
+        const bulletText = line.replace(/^[•\-\*]\s+/, '').trim();
         current.bullets.push({
           id: generateId(),
           text: bulletText,
@@ -346,14 +368,23 @@ const extractProjectEntries = (lines) => {
         });
       }
     } else if (current) {
-      current.bullets.push({
-        id: generateId(),
-        text: trimmed,
-        origin: 'original',
-        enabled: true
-      });
+      // Continuation line: append to the last bullet if present; else start a new bullet
+      const continuation = line.trim();
+      if (continuation) {
+        if (current.bullets.length > 0) {
+          const last = current.bullets[current.bullets.length - 1];
+          last.text = `${last.text} ${continuation}`.replace(/\s+/g, ' ').trim();
+        } else {
+          current.bullets.push({
+            id: generateId(),
+            text: continuation,
+            origin: 'original',
+            enabled: true
+          });
+        }
+      }
     }
-  });
+  }
 
   if (current) entries.push(current);
   return entries;
@@ -414,6 +445,157 @@ const extractSkillEntries = (lines) => {
   }
 
   return entries;
+};
+
+/**
+ * Parse labeled skills blocks like:
+ * Programming Languages:
+ * Frontend Technologies:
+ * ...
+ * Java, Python, ...
+ * React, Angular, ...
+ *
+ * Supports both "Header: value, value" on same line and header followed by values on next line(s).
+ */
+const parseLabeledSkills = (lines) => {
+  const categories = new Map();
+  const KNOWN_HEADERS = [
+    'Programming Languages',
+    'Frontend Technologies',
+    'Database Management',
+    'Backend Technologies',
+    'Tools & Methodologies',
+    'Development Tools',
+    'Version Control & Cloud'
+  ];
+
+  // Header aliases/normalization
+  const HEADER_ALIASES = new Map([
+    ['programming languages', 'Programming Languages'],
+    ['languages (programming)', 'Programming Languages'],
+    ['coding languages', 'Programming Languages'],
+    ['frontend technologies', 'Frontend Technologies'],
+    ['front-end technologies', 'Frontend Technologies'],
+    ['frontend', 'Frontend Technologies'],
+    ['front-end', 'Frontend Technologies'],
+    ['ui technologies', 'Frontend Technologies'],
+    ['database management', 'Database Management'],
+    ['databases', 'Database Management'],
+    ['dbms', 'Database Management'],
+    ['backend technologies', 'Backend Technologies'],
+    ['back-end technologies', 'Backend Technologies'],
+    ['backend', 'Backend Technologies'],
+    ['back-end', 'Backend Technologies'],
+    ['tools & methodologies', 'Tools & Methodologies'],
+    ['tools and methodologies', 'Tools & Methodologies'],
+    ['methodologies', 'Tools & Methodologies'],
+    ['development tools', 'Development Tools'],
+    ['dev tools', 'Development Tools'],
+    ['version control & cloud', 'Version Control & Cloud'],
+    ['version control and cloud', 'Version Control & Cloud'],
+    ['cloud & version control', 'Version Control & Cloud'],
+    ['cloud and version control', 'Version Control & Cloud'],
+  ]);
+
+  const normalizeHeader = (h) => {
+    if (!h) return null;
+    const key = h.toLowerCase().trim();
+    if (HEADER_ALIASES.has(key)) return HEADER_ALIASES.get(key);
+    const direct = KNOWN_HEADERS.find(k => k.toLowerCase() === key);
+    return direct || null;
+  };
+
+  const isHeaderOnly = (line) => {
+    // Accept patterns like: "Header:", "Header -", "Header —", "Header –"
+    const m = line.match(/^(.+?)[:\-–—]\s*$/);
+    if (!m) return null;
+    const canon = normalizeHeader(m[1]);
+    return canon;
+  };
+
+  const addValues = (header, values) => {
+    if (!header || !values || values.length === 0) return;
+    const existing = categories.get(header) || [];
+    const merged = [...existing, ...values]
+      .map(s => s.trim())
+      .filter(Boolean);
+    categories.set(header, Array.from(new Set(merged)));
+  };
+
+  // First, handle inline pattern: "Header: a, b, c" lines anywhere
+  const remaining = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    // Normalize bullets/dashes from list items
+    const clean = line.replace(/^([•\-\*\u2022]+)\s*/, '');
+    const m = clean.match(/^(.+?)[:\-–—]\s*(.+)$/);
+    const canonHeader = m ? normalizeHeader(m[1]) : null;
+    if (m && canonHeader) {
+      const values = m[2]
+        .split(/[,;|/·•]\s*/)
+        .map(s => s.replace(/^([•\-\*\u2022]+)\s*/, '').trim())
+        .filter(Boolean);
+      const header = canonHeader;
+      addValues(header, values);
+    } else {
+      remaining.push(clean);
+    }
+  }
+
+  // Next, handle block pattern: multiple headers first, then same-count value lines
+  let i = 0;
+  while (i < remaining.length) {
+    // collect consecutive headers
+    const headers = [];
+    while (i < remaining.length) {
+      const h = isHeaderOnly(remaining[i]);
+      if (!h) break;
+      headers.push(h);
+      i++;
+    }
+    if (headers.length === 0) {
+      i++; // skip stray non-header line
+      continue;
+    }
+    // collect following non-empty value lines (up to headers.length)
+    const valuesLines = [];
+    while (i < remaining.length && valuesLines.length < headers.length) {
+      const maybeHeader = isHeaderOnly(remaining[i]);
+      if (maybeHeader) break; // stop if a new header-only block starts
+      if (remaining[i]) valuesLines.push(remaining[i]);
+      i++;
+    }
+    // Map one-to-one
+    const count = Math.min(headers.length, valuesLines.length);
+    for (let k = 0; k < count; k++) {
+      const values = valuesLines[k]
+        .split(/[,;|/·•]\s*/)
+        .map(s => s.replace(/^([•\-\*\u2022]+)\s*/, '').trim())
+        .filter(Boolean);
+      addValues(headers[k], values);
+    }
+  }
+
+  // Convert to plain object
+  const result = {};
+  for (const [k, v] of categories.entries()) {
+    if (v && v.length) result[k] = v;
+  }
+  // If nothing matched but there are comma-separated lines under SKILLS, put them under Other Skills
+  if (Object.keys(result).length === 0) {
+    const flat = lines
+      .map(l => l.trim())
+      .filter(Boolean)
+      .map(l => l.replace(/^([•\-\*\u2022]+)\s*/, ''))
+      .flatMap(l => l.split(/[,;|/·•]\s*/))
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (flat.length) {
+      result['Other Skills'] = Array.from(new Set(flat));
+    }
+  }
+  return result;
 };
 
 const extractSkillsSection = (lines) => {
