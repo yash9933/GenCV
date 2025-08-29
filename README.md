@@ -113,8 +113,8 @@ src/
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
-cd ai-resume-builder
+git clone https://github.com/yash9933/GenCV.git
+cd GenCV
 ```
 
 2. **Install dependencies**
