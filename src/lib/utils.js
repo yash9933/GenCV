@@ -674,80 +674,9 @@ import { ResumeTemplate } from '../components/ResumeTemplate.js';
 
 
 
-/**
- * Download LaTeX file (Legacy - kept for compatibility)
- */
-export const downloadLaTeX = (resumeJSON, filename = 'resume.tex') => {
-  // For now, we'll create a simple text version
-  const textContent = generateResumeText(resumeJSON);
-  downloadFile(textContent, filename, 'text/plain');
-};
 
-/**
- * Generate plain text version of resume
- */
-const generateResumeText = (resumeJSON) => {
-  if (!resumeJSON || !resumeJSON.sections) return 'No resume data available';
-  
-  let text = '';
-  
-  // Header
-  if (resumeJSON.metadata?.name) {
-    text += `${resumeJSON.metadata.name.toUpperCase()}\n`;
-  }
-  
-  if (resumeJSON.metadata?.contact) {
-    const contact = resumeJSON.metadata.contact;
-    const contactInfo = [
-      contact.email,
-      contact.phone,
-      ...(contact.links || [])
-    ].filter(Boolean);
-    text += `${contactInfo.join(' | ')}\n`;
-  }
-  
-  text += '\n';
-  
-  // Summary
-  if (resumeJSON.metadata?.summary) {
-    text += `SUMMARY\n${resumeJSON.metadata.summary}\n\n`;
-  }
-  
-  // Sections
-  resumeJSON.sections.forEach(section => {
-    text += `${section.title.toUpperCase()}\n`;
-    text += '='.repeat(section.title.length) + '\n\n';
-    
-    section.entries.forEach(entry => {
-      const title = entry.job_title || entry.name || entry.degree || entry.category || 'Untitled';
-      const details = [entry.company, entry.location, entry.institution].filter(Boolean);
-      const date = entry.date_range || entry.date || '';
-      
-      text += `${title}${details.length > 0 ? ' | ' + details.join(', ') : ''}\n`;
-      if (date) text += `${date}\n`;
-      
-      if (entry.bullets) {
-        entry.bullets
-          .filter(bullet => bullet.enabled)
-          .forEach(bullet => {
-            text += `• ${bullet.text}\n`;
-          });
-      }
-      
-      if (entry.tech_stack && entry.tech_stack.length > 0) {
-        text += `Tech Stack: ${entry.tech_stack.join(', ')}\n`;
-      }
-      
-      if (entry.skills && entry.skills.length > 0) {
-        text += `Skills: ${entry.skills.join(', ')}\n`;
-      }
-      
-      text += '\n';
-    });
-  });
-  
-  return text;
-};
+
+
 
 /**
  * Convert resume JSON to PDF using React-PDF

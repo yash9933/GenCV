@@ -37,14 +37,28 @@ export async function POST(request) {
     const aiFactory = new AIClientFactory();
     console.log('API: AI client factory initialized successfully');
     
-    console.log('API: Using Gemini AI provider');
+    // Get available providers
+    const availableProviders = aiFactory.getAvailableProviders();
+    console.log('API: Available providers:', availableProviders);
+    
+    if (availableProviders.length === 0) {
+      throw new Error('No AI providers are available. Please check your API keys.');
+    }
+    
+    // Choose AI provider - prefer GPT if available, otherwise use Gemini
+    let aiProvider = availableProviders.includes('gpt') ? 'gpt' : 'gemini';
+    
+    console.log(`API: Using ${aiProvider.toUpperCase()} AI provider`);
 
     // Generate content using AI
-    const generatedContent = await aiFactory.generateResumeContent({
-      jobDescription,
-      resumeText,
-      selectedSkills
-    });
+    const generatedContent = await aiFactory.generateResumeContent(
+      aiProvider,
+      {
+        jobDescription,
+        resumeText,
+        selectedSkills
+      }
+    );
 
     console.log('API: AI generation completed successfully');
 

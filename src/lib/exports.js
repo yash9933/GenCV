@@ -7,7 +7,6 @@ export {
   formatResumeText,
   generateId,
   extractResumeToJSON,
-  downloadLaTeX,
   downloadPDF,
   convertResumeToPDF,
   getFilteredJSON

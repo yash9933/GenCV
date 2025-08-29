@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { downloadLaTeX, downloadPDF } from '../lib/utils';
+import { downloadPDF } from '../lib/utils';
 import {
   DndContext,
   closestCenter,
@@ -466,22 +466,7 @@ const ResumeEditor = () => {
              >
                New Resume
              </Button>
-                           <Button
-                variant="secondary"
-                onClick={() => {
-                  try {
-                    const name = resumeJSON.metadata?.name || 'resume';
-                    const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.txt`;
-                    downloadLaTeX(resumeJSON, filename);
-                    toast.success('Text file downloaded successfully!');
-                  } catch (error) {
-                    console.error('Error downloading text file:', error);
-                    toast.error('Failed to download text file');
-                  }
-                }}
-              >
-                Download Text
-              </Button>
+
               <Button
                 variant="primary"
                 disabled={isGeneratingPDF}
