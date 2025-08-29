@@ -56,6 +56,8 @@ const ACTIONS = {
   REORDER_ENTRIES: 'REORDER_ENTRIES',
   REORDER_SECTIONS: 'REORDER_SECTIONS',
   EDIT_JOB_TITLE: 'EDIT_JOB_TITLE',
+  EDIT_SKILL: 'EDIT_SKILL',
+  REORDER_SKILLS: 'REORDER_SKILLS',
   ADD_AI_BULLETS: 'ADD_AI_BULLETS',
   LOAD_FROM_STORAGE: 'LOAD_FROM_STORAGE',
   SAVE_TO_STORAGE: 'SAVE_TO_STORAGE'
@@ -144,6 +146,25 @@ function appReducer(state, action) {
         editEntry.job_title = newTitle;
       }
       return { ...state, resumeJSON: editedResumeJSON };
+      
+    case ACTIONS.EDIT_SKILL:
+      const { sectionIndex: skillSecIdx, entryIndex: skillEntryIdx, skillIndex, newSkill } = action.payload;
+      const skillEditedResumeJSON = { ...state.resumeJSON };
+      const skillEditSection = skillEditedResumeJSON.sections[skillSecIdx];
+      const skillEditEntry = skillEditSection.entries[skillEntryIdx];
+      if (skillEditEntry.skills && skillEditEntry.skills[skillIndex] !== undefined) {
+        skillEditEntry.skills[skillIndex] = newSkill;
+      }
+      return { ...state, resumeJSON: skillEditedResumeJSON };
+      
+    case ACTIONS.REORDER_SKILLS:
+      const { sectionIndex: skillReorderSecIdx, entryIndex: skillReorderEntryIdx, sourceIndex: skillSrcIdx, destinationIndex: skillDestIdx } = action.payload;
+      const skillReorderedResumeJSON = { ...state.resumeJSON };
+      const skillReorderSection = skillReorderedResumeJSON.sections[skillReorderSecIdx];
+      const skillReorderEntry = skillReorderSection.entries[skillReorderEntryIdx];
+      const [movedSkill] = skillReorderEntry.skills.splice(skillSrcIdx, 1);
+      skillReorderEntry.skills.splice(skillDestIdx, 0, movedSkill);
+      return { ...state, resumeJSON: skillReorderedResumeJSON };
       
     case ACTIONS.ADD_AI_BULLETS:
       const { sectionIndex: aiSecIdx, entryIndex: aiEntryIdx, aiBullets } = action.payload;
@@ -275,6 +296,18 @@ export function AppProvider({ children }) {
       dispatch({ 
         type: ACTIONS.EDIT_JOB_TITLE, 
         payload: { sectionIndex, entryIndex, newTitle } 
+      }),
+      
+    editSkill: (sectionIndex, entryIndex, skillIndex, newSkill) => 
+      dispatch({ 
+        type: ACTIONS.EDIT_SKILL, 
+        payload: { sectionIndex, entryIndex, skillIndex, newSkill } 
+      }),
+      
+    reorderSkills: (sectionIndex, entryIndex, sourceIndex, destinationIndex) => 
+      dispatch({ 
+        type: ACTIONS.REORDER_SKILLS, 
+        payload: { sectionIndex, entryIndex, sourceIndex, destinationIndex } 
       }),
       
     addAIBullets: (sectionIndex, entryIndex, aiBullets) => 

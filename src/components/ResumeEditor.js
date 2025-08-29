@@ -30,7 +30,7 @@ import toast from 'react-hot-toast';
 /**
  * Section Component (No drag functionality)
  */
-const Section = ({ section, sectionIndex, onReorderBullets, onToggleBullet, onEditJobTitle }) => {
+const Section = ({ section, sectionIndex, onReorderBullets, onToggleBullet, onEditJobTitle, onEditSkill, onReorderSkills }) => {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-4">
@@ -47,6 +47,8 @@ const Section = ({ section, sectionIndex, onReorderBullets, onToggleBullet, onEd
           onReorderBullets={onReorderBullets}
           onToggleBullet={onToggleBullet}
           onEditJobTitle={onEditJobTitle}
+          onEditSkill={onEditSkill}
+          onReorderSkills={onReorderSkills}
         />
       ))}
     </div>
@@ -56,7 +58,7 @@ const Section = ({ section, sectionIndex, onReorderBullets, onToggleBullet, onEd
 /**
  * Entry Component (No drag functionality)
  */
-const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBullet, onEditJobTitle }) => {
+const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBullet, onEditJobTitle, onEditSkill, onReorderSkills }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(entry.job_title || entry.name || '');
 
@@ -142,15 +144,20 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
       {entry.skills && Array.isArray(entry.skills) && entry.skills.length > 0 && (
         <div className="mb-3">
           <div className="text-sm text-gray-600 mb-1">Skills:</div>
-          <div className="flex flex-wrap gap-1">
-            {entry.skills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
-              >
-                {skill}
-              </span>
-            ))}
+          <div className="space-y-1">
+            <SortableContext items={entry.skills.map((_, index) => `skill-${sectionIndex}-${entryIndex}-${index}`)} strategy={verticalListSortingStrategy}>
+              {entry.skills.map((skill, index) => (
+                <SortableSkill
+                  key={`skill-${sectionIndex}-${entryIndex}-${index}`}
+                  skill={skill}
+                  skillIndex={index}
+                  sectionIndex={sectionIndex}
+                  entryIndex={entryIndex}
+                  onEditSkill={onEditSkill}
+                  onReorderSkills={onReorderSkills}
+                />
+              ))}
+            </SortableContext>
           </div>
         </div>
       )}
@@ -258,6 +265,105 @@ const SortableBullet = ({ bullet, sectionIndex, entryIndex, bulletIndex, onToggl
 };
 
 /**
+ * Sortable Skill Component
+ */
+const SortableSkill = ({ skill, skillIndex, sectionIndex, entryIndex, onEditSkill, onReorderSkills }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedSkill, setEditedSkill] = useState(skill);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: `skill-${sectionIndex}-${entryIndex}-${skillIndex}`,
+    transition: {
+      duration: 150,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const handleSave = () => {
+    if (editedSkill.trim()) {
+      onEditSkill(sectionIndex, entryIndex, skillIndex, editedSkill.trim());
+      setIsEditing(false);
+      toast.success('Skill updated');
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedSkill(skill);
+    setIsEditing(false);
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center space-x-2 p-2 rounded hover:bg-gray-100 transition-all duration-150 bg-green-50 border border-green-200 ${
+        isDragging ? 'shadow-lg scale-105' : ''
+      }`}
+    >
+      {/* Drag Handle - Only this area is draggable */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex-shrink-0 w-5 h-5 flex items-center justify-center cursor-move hover:bg-green-200 rounded"
+        title="Drag to reorder"
+      >
+        <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M7 2a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 2zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 8zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 7 14zm6-8a2 2 0 1 1-.001-4.001A2 2 0 0 1 13 6zm0 2a2 2 0 1 1 .001 4.001A2 2 0 0 1 13 8zm0 6a2 2 0 1 1 .001 4.001A2 2 0 0 1 13 14z" />
+        </svg>
+      </div>
+      
+      {/* Content - Editable but not draggable */}
+      <div className="flex-1">
+        {isEditing ? (
+          <div className="flex items-center space-x-2">
+            <Input
+              value={editedSkill}
+              onChange={(e) => setEditedSkill(e.target.value)}
+              className="flex-1 text-sm"
+              autoFocus
+            />
+            <Button size="sm" variant="primary" onClick={handleSave}>
+              Save
+            </Button>
+            <Button size="sm" variant="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center space-x-2">
+            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded flex-1">
+              {skill}
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              className="text-green-600 hover:text-green-800 text-xs"
+            >
+              Edit
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
  * Main Resume Editor Component
  */
 const ResumeEditor = () => {
@@ -282,7 +388,7 @@ const ResumeEditor = () => {
       return;
     }
 
-    // Handle bullet reordering only
+    // Handle bullet reordering
     // Find the bullet in the JSON structure
     for (let sectionIndex = 0; sectionIndex < resumeJSON.sections.length; sectionIndex++) {
       const section = resumeJSON.sections[sectionIndex];
@@ -301,6 +407,22 @@ const ResumeEditor = () => {
           actions.reorderBullets(sectionIndex, entryIndex, bulletIndex, overBulletIndex);
           return;
         }
+      }
+    }
+
+    // Handle skill reordering
+    // Parse skill IDs to find the correct section and entry
+    const activeSkillMatch = active.id.match(/^skill-(\d+)-(\d+)-(\d+)$/);
+    const overSkillMatch = over.id.match(/^skill-(\d+)-(\d+)-(\d+)$/);
+    
+    if (activeSkillMatch && overSkillMatch) {
+      const [, activeSectionIndex, activeEntryIndex, activeSkillIndex] = activeSkillMatch.map(Number);
+      const [, overSectionIndex, overEntryIndex, overSkillIndex] = overSkillMatch.map(Number);
+      
+      // Only allow reordering within the same category (same section and entry)
+      if (activeSectionIndex === overSectionIndex && activeEntryIndex === overEntryIndex) {
+        actions.reorderSkills(activeSectionIndex, activeEntryIndex, activeSkillIndex, overSkillIndex);
+        return;
       }
     }
   };
@@ -424,16 +546,18 @@ const ResumeEditor = () => {
            onDragStart={handleDragStart}
            onDragEnd={handleDragEnd}
          >
-           {resumeJSON.sections.map((section, sectionIndex) => (
-             <Section
-               key={`section-${sectionIndex}`}
-               section={section}
-               sectionIndex={sectionIndex}
-               onReorderBullets={actions.reorderBullets}
-               onToggleBullet={actions.toggleBullet}
-               onEditJobTitle={actions.editJobTitle}
-             />
-           ))}
+                       {resumeJSON.sections.map((section, sectionIndex) => (
+              <Section
+                key={`section-${sectionIndex}`}
+                section={section}
+                sectionIndex={sectionIndex}
+                onReorderBullets={actions.reorderBullets}
+                onToggleBullet={actions.toggleBullet}
+                onEditJobTitle={actions.editJobTitle}
+                onEditSkill={actions.editSkill}
+                onReorderSkills={actions.reorderSkills}
+              />
+            ))}
          </DndContext>
       </div>
     </div>
