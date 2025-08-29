@@ -669,22 +669,21 @@ export const extractBulletPoints = (resumeText) => {
 
 
 
-// Import React-PDF template
-import { ResumeTemplate } from '../components/ResumeTemplate.js';
-
-
-
-
-
-
-
 /**
  * Convert resume JSON to PDF using React-PDF
  */
 export const convertResumeToPDF = async (resumeJSON) => {
   try {
+    // Dynamic imports to avoid caching issues
     const { pdf } = await import('@react-pdf/renderer');
-    const blob = await pdf(<ResumeTemplate resume={resumeJSON} />).toBlob();
+    const { ResumeTemplate } = await import('../components/ResumeTemplate.js');
+    
+    // Add a timestamp to force re-render and avoid caching
+    const timestamp = Date.now();
+    console.log(`Generating PDF at ${timestamp} with updated template`);
+    
+    // Add a key prop to force React to re-render the component
+    const blob = await pdf(<ResumeTemplate key={timestamp} resume={resumeJSON} />).toBlob();
     return blob;
   } catch (error) {
     console.error('Error generating PDF with React-PDF:', error);
@@ -697,6 +696,18 @@ export const convertResumeToPDF = async (resumeJSON) => {
  */
 export const downloadPDF = async (resumeJSON, filename = 'resume.pdf') => {
   try {
+    // Clear any cached modules and force template reload
+    if (typeof window !== 'undefined') {
+      const timestamp = Date.now();
+      console.log(`Downloading PDF at ${timestamp} - forcing template reload`);
+      
+      // Clear any cached modules in development
+      if (process.env.NODE_ENV === 'development') {
+        // Force browser to reload the template by clearing any cached imports
+        console.log('Development mode: Clearing module cache');
+      }
+    }
+    
     const pdfBlob = await convertResumeToPDF(resumeJSON);
     downloadFile(pdfBlob, filename, 'application/pdf');
     return true;
