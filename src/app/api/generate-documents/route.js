@@ -37,20 +37,14 @@ export async function POST(request) {
     const aiFactory = new AIClientFactory();
     console.log('API: AI client factory initialized successfully');
     
-    // Choose AI provider (can be easily switched)
-    const aiProvider = 'gemini'; // Change to 'gpt' to use OpenAI
-    
-    console.log(`API: Using AI provider: ${aiProvider}`);
+    console.log('API: Using Gemini AI provider');
 
     // Generate content using AI
-    const generatedContent = await aiFactory.generateResumeContent(
-      aiProvider,
-      {
-        jobDescription,
-        resumeText,
-        selectedSkills
-      }
-    );
+    const generatedContent = await aiFactory.generateResumeContent({
+      jobDescription,
+      resumeText,
+      selectedSkills
+    });
 
     console.log('API: AI generation completed successfully');
 

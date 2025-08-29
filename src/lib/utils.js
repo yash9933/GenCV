@@ -598,84 +598,7 @@ const parseLabeledSkills = (lines) => {
   return result;
 };
 
-const extractSkillsSection = (lines) => {
-  const skills = { technical: [], soft: [] };
-  const technicalKeywords = [
-    'javascript', 'python', 'java', 'react', 'node.js', 'sql', 'aws', 'docker',
-    'kubernetes', 'git', 'html', 'css', 'typescript', 'angular', 'vue.js',
-    'mongodb', 'postgresql', 'redis', 'kafka', 'microservices', 'ci/cd',
-    'jenkins', 'terraform', 'ansible', 'linux', 'machine learning', 'data analysis',
-    'c++', 'c#', 'rust', 'graphql', 'nosql', 'mysql', 'mongodb',
-    'html5', 'json', 'adobe flex', 'restful apis', 'agile', 'scrum', 'jira',
-    'confluence', 'visual studio code', 'github',
-    'amazon aws', 'google gcp', 'microsoft azure', 'next.js', 'vercel', 'firebase',
-    'express.js', 'mern', 'paypal', 'stripe', 'ec3', 'web3', 'blockchain',
-    'websockets', 'jwt', 'oauth2', 'mockito', 'junit', 'dynamodb', 'redis'
-  ];
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
-    if (/:$/.test(trimmed.toLowerCase()) || trimmed.includes(':')) {
-      // category header line; skip values on header line
-      return;
-    }
-    const parts = trimmed.split(/[,;]\s*/).map(s => s.trim()).filter(Boolean);
-    parts.forEach(skill => {
-      const lower = skill.toLowerCase();
-      if (technicalKeywords.some(k => lower.includes(k))) {
-        skills.technical.push(skill);
-      } else {
-        skills.soft.push(skill);
-      }
-    });
-  });
-
-  skills.technical = [...new Set(skills.technical)];
-  skills.soft = [...new Set(skills.soft)];
-  return skills;
-};
-
-const extractProjectsSection = (lines) => {
-  const projects = [];
-  let current = null;
-
-  const isBullet = (s) => /^[•\-\*]\s+/.test(s);
-
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return;
-
-    if (trimmed.includes('|') && !isBullet(trimmed)) {
-      if (current) projects.push(current);
-      const parts = trimmed.split('|').map(p => p.trim());
-      current = { name: parts[0] || '', techStack: parts[1] || '', bullets: [] };
-    } else if (isBullet(trimmed)) {
-      if (current) current.bullets.push(trimmed.replace(/^[•\-\*]\s+/, '').trim());
-    } else if (current) {
-      current.bullets.push(trimmed);
-    }
-  });
-
-  if (current) projects.push(current);
-  return projects;
-};
-
-const extractCertificationsSection = (lines) => (
-  lines.map(line => line.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-);
-const extractLanguagesSection = (lines) => (
-  lines.map(line => line.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-);
-const extractAwardsSection = (lines) => (
-  lines.map(line => line.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-);
-const extractVolunteerSection = (lines) => (
-  lines.map(line => line.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-);
-const extractInterestsSection = (lines) => (
-  lines.map(line => line.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-);
 
 // -------------------- Kept utilities --------------------
 
@@ -742,165 +665,116 @@ export const extractBulletPoints = (resumeText) => {
   return bullets;
 };
 
-export const debounce = (func, wait) => {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
 
-export const resumeJSONToText = (resumeData) => {
-  if (!resumeData) return '';
-  let text = '';
 
-  if (resumeData.personalInfo) {
-    const { name, email, phone, location, linkedin, website } = resumeData.personalInfo;
-    if (name) text += `${name}\n`;
-    const contactParts = [phone, email, location, linkedin, website].filter(Boolean);
-    if (contactParts.length) text += contactParts.join(' • ') + '\n\n';
-  }
 
-  if (resumeData.summary) text += `SUMMARY\n${resumeData.summary}\n\n`;
 
-  if (resumeData.experience?.length) {
-    text += 'PROFESSIONAL EXPERIENCE\n';
-    resumeData.experience.forEach(exp => {
-      const headerRight = [exp.company, exp.location].filter(Boolean).join(', ');
-      text += `${exp.title} | ${headerRight}\n`;
-      if (exp.duration) text += `${exp.duration}\n`;
-      exp.bullets?.forEach(b => text += `• ${b}\n`);
-      if (exp.techStack) text += `Tech Stack: ${exp.techStack}\n`;
-      text += '\n';
-    });
-  }
-
-  if (resumeData.skills) {
-    const { technical, soft } = resumeData.skills;
-    if (technical?.length) text += 'TECHNICAL SKILLS\n' + technical.join(', ') + '\n\n';
-    if (soft?.length) text += 'SOFT SKILLS\n' + soft.join(', ') + '\n\n';
-  }
-
-  if (resumeData.projects?.length) {
-    text += 'PROJECTS\n';
-    resumeData.projects.forEach(p => {
-      text += `${p.name}${p.techStack ? ' | ' + p.techStack : ''}\n`;
-      p.bullets?.forEach(b => text += `• ${b}\n`);
-      text += '\n';
-    });
-  }
-
-  if (resumeData.education?.length) {
-    text += 'EDUCATION\n';
-    resumeData.education.forEach(e => {
-      const right = [e.institution, e.location].filter(Boolean).join(', ');
-      text += `${e.degree}${right ? ' - ' + right : ''}${e.duration ? ' - ' + e.duration : ''}\n`;
-      if (e.gpa) text += `${e.gpa}\n`;
-      text += '\n';
-    });
-  }
-
-  ['certifications','languages','awards','volunteer','interests'].forEach(key => {
-    const arr = resumeData[key];
-    if (Array.isArray(arr) && arr.length) {
-      const header = key.toUpperCase();
-      text += `${header}\n`;
-      if (key === 'languages' || key === 'interests') {
-        text += arr.join(', ') + '\n\n';
-      } else {
-        arr.forEach(item => text += `• ${item}\n`);
-        text += '\n';
-      }
-    }
-  });
-
-  return text.trim();
-};
-
-export const generateResumeContent = (data) => {
-  const { originalResume, originalBullets, generatedBullets } = data;
-  const enabledOriginalBullets = originalBullets?.filter(b => b.isEnabled) || [];
-  const enabledGeneratedBullets = generatedBullets?.filter(b => b.isEnabled) || [];
-  let updatedResume = originalResume;
-
-  if (originalBullets?.length) {
-    const lines = updatedResume.split('\n');
-    const newLines = [];
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const match = enabledOriginalBullets.find(b => line.includes(b.text) || b.text.includes(line.trim()));
-      if (match) newLines.push(line);
-      else if (!originalBullets.find(b => line.includes(b.text))) newLines.push(line);
-    }
-    updatedResume = newLines.join('\n');
-  }
-
-  if (enabledGeneratedBullets.length > 0) {
-    const lines = updatedResume.split('\n');
-    const newLines = [];
-    let inserted = false;
-    for (let i = 0; i < lines.length; i++) {
-      newLines.push(lines[i]);
-      if (!inserted && /^(\s*)?(EXPERIENCE|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)/i.test(lines[i])) {
-        const bulletLines = enabledGeneratedBullets.map(b => `• ${b.text}`);
-        newLines.push('', 'Generated Bullets:', '', ...bulletLines, '');
-        inserted = true;
-      }
-    }
-    updatedResume = newLines.join('\n');
-  }
-
-  return updatedResume;
-};
-
-export const generateResumePreview = (data) => {
-  const { originalResume, originalBullets, generatedBullets } = data;
-  const enabledOriginalBullets = originalBullets?.filter(b => b.isEnabled) || [];
-  const enabledGeneratedBullets = generatedBullets?.filter(b => b.isEnabled) || [];
-  let preview = '';
-
-  preview += 'PROFESSIONAL RESUME\n' + '='.repeat(50) + '\n\n';
-  if (originalResume) {
-    const truncated = originalResume.length > 200 ? originalResume.slice(0, 200) + '...' : originalResume;
-    preview += truncated + '\n\n';
-  }
-  if (enabledOriginalBullets.length || enabledGeneratedBullets.length) {
-    preview += 'SELECTED BULLETS\n' + '-'.repeat(30) + '\n';
-    if (enabledOriginalBullets.length) {
-      preview += 'Original Bullets (Enabled):\n';
-      enabledOriginalBullets.forEach(b => preview += `• ${b.text}\n`);
-      preview += '\n';
-    }
-    if (enabledGeneratedBullets.length) {
-      preview += 'Generated Bullets (Will appear in Work Experience):\n';
-      enabledGeneratedBullets.forEach(b => preview += `• ${b.text}\n`);
-      preview += '\n';
-    }
-  }
-  return preview;
-};
-
-// Import LaTeX template module
-import { jsonToLaTeX } from './latexTemplate.js';
-
-/**
- * Convert canonical JSON to LaTeX format
- * Filters only enabled bullets and creates LaTeX source
- */
-export { jsonToLaTeX };
+// Import React-PDF template
+import { ResumeTemplate } from '../components/ResumeTemplate.js';
 
 
 
 /**
- * Download LaTeX file
+ * Download LaTeX file (Legacy - kept for compatibility)
  */
 export const downloadLaTeX = (resumeJSON, filename = 'resume.tex') => {
-  const latex = jsonToLaTeX(resumeJSON);
-  downloadFile(latex, filename, 'application/x-tex');
+  // For now, we'll create a simple text version
+  const textContent = generateResumeText(resumeJSON);
+  downloadFile(textContent, filename, 'text/plain');
+};
+
+/**
+ * Generate plain text version of resume
+ */
+const generateResumeText = (resumeJSON) => {
+  if (!resumeJSON || !resumeJSON.sections) return 'No resume data available';
+  
+  let text = '';
+  
+  // Header
+  if (resumeJSON.metadata?.name) {
+    text += `${resumeJSON.metadata.name.toUpperCase()}\n`;
+  }
+  
+  if (resumeJSON.metadata?.contact) {
+    const contact = resumeJSON.metadata.contact;
+    const contactInfo = [
+      contact.email,
+      contact.phone,
+      ...(contact.links || [])
+    ].filter(Boolean);
+    text += `${contactInfo.join(' | ')}\n`;
+  }
+  
+  text += '\n';
+  
+  // Summary
+  if (resumeJSON.metadata?.summary) {
+    text += `SUMMARY\n${resumeJSON.metadata.summary}\n\n`;
+  }
+  
+  // Sections
+  resumeJSON.sections.forEach(section => {
+    text += `${section.title.toUpperCase()}\n`;
+    text += '='.repeat(section.title.length) + '\n\n';
+    
+    section.entries.forEach(entry => {
+      const title = entry.job_title || entry.name || entry.degree || entry.category || 'Untitled';
+      const details = [entry.company, entry.location, entry.institution].filter(Boolean);
+      const date = entry.date_range || entry.date || '';
+      
+      text += `${title}${details.length > 0 ? ' | ' + details.join(', ') : ''}\n`;
+      if (date) text += `${date}\n`;
+      
+      if (entry.bullets) {
+        entry.bullets
+          .filter(bullet => bullet.enabled)
+          .forEach(bullet => {
+            text += `• ${bullet.text}\n`;
+          });
+      }
+      
+      if (entry.tech_stack && entry.tech_stack.length > 0) {
+        text += `Tech Stack: ${entry.tech_stack.join(', ')}\n`;
+      }
+      
+      if (entry.skills && entry.skills.length > 0) {
+        text += `Skills: ${entry.skills.join(', ')}\n`;
+      }
+      
+      text += '\n';
+    });
+  });
+  
+  return text;
+};
+
+/**
+ * Convert resume JSON to PDF using React-PDF
+ */
+export const convertResumeToPDF = async (resumeJSON) => {
+  try {
+    const { pdf } = await import('@react-pdf/renderer');
+    const blob = await pdf(<ResumeTemplate resume={resumeJSON} />).toBlob();
+    return blob;
+  } catch (error) {
+    console.error('Error generating PDF with React-PDF:', error);
+    throw new Error('PDF generation failed. Please try again.');
+  }
+};
+
+/**
+ * Download PDF file
+ */
+export const downloadPDF = async (resumeJSON, filename = 'resume.pdf') => {
+  try {
+    const pdfBlob = await convertResumeToPDF(resumeJSON);
+    downloadFile(pdfBlob, filename, 'application/pdf');
+    return true;
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw error;
+  }
 };
 
 /**

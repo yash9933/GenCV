@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
-import { jsonToLaTeX } from '../lib/utils';
+
 
 const ResumeJSONViewer = () => {
   const { state } = useAppContext();
@@ -19,7 +19,7 @@ const ResumeJSONViewer = () => {
     );
   }
 
-  const formattedText = jsonToLaTeX(resumeJSON);
+  const formattedText = JSON.stringify(resumeJSON, null, 2);
 
   return (
     <div className="max-w-4xl mx-auto p-6">

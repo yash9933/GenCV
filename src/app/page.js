@@ -1,10 +1,12 @@
 'use client';
 
 import { AppProvider, useAppContext } from '../context/AppContext';
-import ResumeInputForm from '../components/ResumeInputForm';
-import SkillChecklist from '../components/SkillChecklist';
-import ResumeJSONViewer from '../components/ResumeJSONViewer';
-import ResumeEditor from '../components/ResumeEditor';
+import { 
+  ResumeInputForm, 
+  SkillChecklist, 
+  ResumeJSONViewer, 
+  ResumeEditor 
+} from '../components';
 
 /**
  * Main Application Component

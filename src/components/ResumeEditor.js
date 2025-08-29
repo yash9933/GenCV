@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { downloadLaTeX } from '../lib/utils';
+import { downloadLaTeX, downloadPDF } from '../lib/utils';
 import {
   DndContext,
   closestCenter,
@@ -369,6 +369,7 @@ const SortableSkill = ({ skill, skillIndex, sectionIndex, entryIndex, onEditSkil
 const ResumeEditor = () => {
   const { state, actions } = useAppContext();
   const { resumeJSON } = state;
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -465,22 +466,42 @@ const ResumeEditor = () => {
              >
                New Resume
              </Button>
-             <Button
-               variant="primary"
-               onClick={() => {
-                 try {
-                   const name = resumeJSON.metadata?.name || 'resume';
-                   const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.tex`;
-                   downloadLaTeX(resumeJSON, filename);
-                   toast.success('LaTeX file downloaded successfully!');
-                 } catch (error) {
-                   console.error('Error downloading LaTeX:', error);
-                   toast.error('Failed to download LaTeX file');
-                 }
-               }}
-             >
-               Download LaTeX
-             </Button>
+                           <Button
+                variant="secondary"
+                onClick={() => {
+                  try {
+                    const name = resumeJSON.metadata?.name || 'resume';
+                    const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.txt`;
+                    downloadLaTeX(resumeJSON, filename);
+                    toast.success('Text file downloaded successfully!');
+                  } catch (error) {
+                    console.error('Error downloading text file:', error);
+                    toast.error('Failed to download text file');
+                  }
+                }}
+              >
+                Download Text
+              </Button>
+              <Button
+                variant="primary"
+                disabled={isGeneratingPDF}
+                onClick={async () => {
+                  try {
+                    setIsGeneratingPDF(true);
+                    const name = resumeJSON.metadata?.name || 'resume';
+                    const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+                    await downloadPDF(resumeJSON, filename);
+                    toast.success('PDF file downloaded successfully!');
+                  } catch (error) {
+                    console.error('Error downloading PDF:', error);
+                    toast.error('Failed to generate PDF. Please try again.');
+                  } finally {
+                    setIsGeneratingPDF(false);
+                  }
+                }}
+              >
+                {isGeneratingPDF ? 'Generating PDF...' : 'Download PDF'}
+              </Button>
            </div>
         </div>
 

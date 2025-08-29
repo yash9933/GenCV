@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppContext } from '../context/AppContext';
-import { copyToClipboard, downloadFile, jsonToLaTeX, getFilteredJSON } from '../lib/utils';
+import { copyToClipboard, downloadFile, getFilteredJSON } from '../lib/utils';
 import Button from './ui/Button';
 import toast from 'react-hot-toast';
 
@@ -22,7 +22,7 @@ const GeneratedResumeView = () => {
    */
   const getFinalResumeContent = () => {
     const filteredJSON = getFilteredJSON(state.resumeJSON);
-    return jsonToLaTeX(filteredJSON);
+    return JSON.stringify(filteredJSON, null, 2);
   };
 
   /**

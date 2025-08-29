@@ -1,40 +1,29 @@
 import GeminiClient from './gemini';
-// import GPTClient from './gpt'; // Commented out to disable GPT
 
 /**
  * AI Client Factory
- * Allows easy switching between different AI providers
+ * Simplified to use only Gemini provider
  */
 class AIClientFactory {
   constructor() {
-    this.clients = {
-      gemini: new GeminiClient(),
-      // gpt: new GPTClient() // Commented out to disable GPT
-    };
+    this.client = new GeminiClient();
   }
 
   /**
-   * Get AI client by provider
-   * @param {string} provider - 'gemini' or 'gpt'
+   * Get AI client
    * @returns {Object} - AI client instance
    */
-  getClient(provider = 'gemini') {
-    const client = this.clients[provider];
-    if (!client) {
-      throw new Error(`Unsupported AI provider: ${provider}`);
-    }
-    return client;
+  getClient() {
+    return this.client;
   }
 
   /**
-   * Generate resume content using specified provider
-   * @param {string} provider - 'gemini' or 'gpt'
+   * Generate resume content
    * @param {Object} params - Generation parameters
    * @returns {Promise<Object>} - Generated content
    */
-  async generateResumeContent(provider = 'gemini', params) {
-    const client = this.getClient(provider);
-    return await client.generateResumeContent(params);
+  async generateResumeContent(params) {
+    return await this.client.generateResumeContent(params);
   }
 }
 
