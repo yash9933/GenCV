@@ -13,7 +13,21 @@ import {
  * Orchestrates the entire resume builder flow
  */
 function AppContent() {
-  const { state } = useAppContext();
+  const { state, actions } = useAppContext();
+
+  // Navigation handlers
+  const handleStepClick = (step) => {
+    // Only allow navigation to completed steps or current step
+    if (step === 'input' || 
+        (step === 'skills' && state.isInputSubmitted) ||
+        (step === 'editor' && state.isInputSubmitted && state.resumeJSON.sections.length > 0)) {
+      actions.setCurrentStep(step);
+    }
+  };
+
+  // Check if steps are accessible
+  const isSkillsAccessible = state.isInputSubmitted;
+  const isEditorAccessible = state.isInputSubmitted && state.resumeJSON.sections.length > 0;
 
   // Render different components based on current step
   const renderCurrentStep = () => {
@@ -54,36 +68,55 @@ function AppContent() {
             
             {/* Progress Indicator */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+              <div 
+                className={`flex items-center space-x-2 cursor-pointer transition-colors ${
+                  state.currentStep === 'input' ? 'text-blue-600' : 'text-gray-600'
+                }`}
+                onClick={() => handleStepClick('input')}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   state.currentStep === 'input' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
                 }`}>
                   1
                 </div>
-                <span className="text-sm text-gray-600">Input</span>
+                <span className="text-sm">Input</span>
               </div>
               
               <div className="w-8 h-0.5 bg-gray-300"></div>
               
-              <div className="flex items-center space-x-2">
+              <div 
+                className={`flex items-center space-x-2 cursor-pointer transition-colors ${
+                  state.currentStep === 'skills' ? 'text-blue-600' : 
+                  isSkillsAccessible ? 'text-gray-600 hover:text-blue-600' : 'text-gray-400'
+                }`}
+                onClick={() => handleStepClick('skills')}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   state.currentStep === 'skills' ? 'bg-blue-600 text-white' : 
-                  state.currentStep === 'editor' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600'
+                  state.currentStep === 'editor' ? 'bg-green-600 text-white' : 
+                  isSkillsAccessible ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-400'
                 }`}>
                   2
                 </div>
-                <span className="text-sm text-gray-600">Skills</span>
+                <span className="text-sm">Skills</span>
               </div>
               
               <div className="w-8 h-0.5 bg-gray-300"></div>
               
-              <div className="flex items-center space-x-2">
+              <div 
+                className={`flex items-center space-x-2 cursor-pointer transition-colors ${
+                  state.currentStep === 'editor' ? 'text-blue-600' : 
+                  isEditorAccessible ? 'text-gray-600 hover:text-blue-600' : 'text-gray-400'
+                }`}
+                onClick={() => handleStepClick('editor')}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  state.currentStep === 'editor' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                  state.currentStep === 'editor' ? 'bg-blue-600 text-white' : 
+                  isEditorAccessible ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-400'
                 }`}>
                   3
                 </div>
-                <span className="text-sm text-gray-600">Edit</span>
+                <span className="text-sm">Edit</span>
               </div>
             </div>
           </div>

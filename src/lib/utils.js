@@ -674,20 +674,33 @@ export const extractBulletPoints = (resumeText) => {
  */
 export const convertResumeToPDF = async (resumeJSON) => {
   try {
+    console.log('Starting PDF generation with resume data:', resumeJSON);
+    
     // Dynamic imports to avoid caching issues
     const { pdf } = await import('@react-pdf/renderer');
+    console.log('React-PDF imported successfully');
+    
     const { ResumeTemplate } = await import('../components/ResumeTemplate.js');
+    console.log('ResumeTemplate imported successfully');
     
     // Add a timestamp to force re-render and avoid caching
     const timestamp = Date.now();
     console.log(`Generating PDF at ${timestamp} with updated template`);
     
+    // Validate resume data
+    if (!resumeJSON || !resumeJSON.sections) {
+      throw new Error('Invalid resume data: missing sections');
+    }
+    
     // Add a key prop to force React to re-render the component
     const blob = await pdf(<ResumeTemplate key={timestamp} resume={resumeJSON} />).toBlob();
+    console.log('PDF blob generated successfully, size:', blob.size);
+    
     return blob;
   } catch (error) {
-    console.error('Error generating PDF with React-PDF:', error);
-    throw new Error('PDF generation failed. Please try again.');
+    console.error('Detailed error in PDF generation:', error);
+    console.error('Error stack:', error.stack);
+    throw new Error(`PDF generation failed: ${error.message}`);
   }
 };
 
