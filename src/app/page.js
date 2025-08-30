@@ -51,9 +51,9 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div>
@@ -123,17 +123,18 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="py-8">
+      <main className="flex-1 py-4 px-4">
         {renderCurrentStep()}
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-16">
+      <footer className="bg-white border-t flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-gray-600">
-            <p>Built with Next.js, Tailwind CSS, and AI-powered by Gemini</p>
+            <p>Built with ❤️ by Yash</p>
             <p className="mt-2">
-              Generate professional resumes and cover letters that stand out to ATS systems and hiring managers.
+              Generate professional resumes and cover letters that stand out to ATS systems and hiring managers. <br />
+              Powered by Next.js, Tailwind CSS, and AI by GPT+Gemini <br />
             </p>
           </div>
         </div>
