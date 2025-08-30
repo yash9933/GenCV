@@ -38,7 +38,6 @@ function AppContent() {
       case 'skills':
         return (
           <div className="space-y-8">
-            <ResumeJSONViewer />
             <SkillChecklist />
           </div>
         );
