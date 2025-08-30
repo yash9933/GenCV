@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AppProvider, useAppContext } from '../context/AppContext';
 import { 
   ResumeInputForm, 
@@ -7,6 +8,92 @@ import {
   ResumeJSONViewer, 
   ResumeEditor 
 } from '../components';
+
+/**
+ * Password Protection Component
+ * Shows a password prompt before allowing access to the app
+ */
+function PasswordProtection({ onPasswordCorrect }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // For testing purposes - you can change this password
+  const CORRECT_PASSWORD = 'iloveyash';
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError('');
+
+    // Simulate a small delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    if (password === CORRECT_PASSWORD) {
+      onPasswordCorrect();
+    } else {
+      setError('Incorrect password. Please try again.');
+      setPassword('');
+    }
+    
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              AI Resume Builder
+            </h1>
+            <p className="text-gray-600">
+              Generate human-like, ATS-friendly resumes and cover letters
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Enter Password to Access
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter password..."
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !password.trim()}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSubmitting ? 'Verifying...' : 'Access Application'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              For testing purposes only. Contact administrator for access.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Main Application Component
@@ -144,9 +231,19 @@ function AppContent() {
 }
 
 /**
- * Main Page Component with Context Provider
+ * Main Page Component with Password Protection
  */
 export default function HomePage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const handlePasswordCorrect = () => {
+    setIsAuthenticated(true);
+  };
+
+  if (!isAuthenticated) {
+    return <PasswordProtection onPasswordCorrect={handlePasswordCorrect} />;
+  }
+
   return (
     <AppProvider>
       <AppContent />
