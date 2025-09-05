@@ -53,55 +53,54 @@ const ResumeJSONViewer = () => {
           <div className="bg-blue-50 p-4 rounded-lg">
             <h4 className="font-semibold text-blue-800">Contact Info</h4>
             <p className="text-blue-600 text-sm">
-              {resumeJSON.metadata?.name ? '✓ Name' : '✗ No name'}
+              {(resumeJSON.name || resumeJSON.metadata?.name) ? '✓ Name' : '✗ No name'}
             </p>
             <p className="text-blue-600 text-sm">
-              {resumeJSON.metadata?.contact?.email ? '✓ Email' : '✗ No email'}
+              {(resumeJSON.contact?.email || resumeJSON.metadata?.contact?.email) ? '✓ Email' : '✗ No email'}
             </p>
             <p className="text-blue-600 text-sm">
-              {resumeJSON.metadata?.contact?.phone ? '✓ Phone' : '✗ No phone'}
+              {(resumeJSON.contact?.phone || resumeJSON.metadata?.contact?.phone) ? '✓ Phone' : '✗ No phone'}
             </p>
           </div>
 
           <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-800">Sections</h4>
+            <h4 className="font-semibold text-green-800">Experience</h4>
             <p className="text-green-600 text-sm">
-              {resumeJSON.sections?.length || 0} total sections
+              {resumeJSON.experience?.length || resumeJSON.sections?.length || 0} total positions
             </p>
             <p className="text-green-600 text-sm">
-              {resumeJSON.sections?.reduce((total, section) => total + section.entries.length, 0) || 0} total entries
+              {resumeJSON.experience?.reduce((total, job) => total + (job.responsibilities?.length || 0), 0) || 
+               resumeJSON.sections?.reduce((total, section) => total + section.entries.length, 0) || 0} total entries
             </p>
           </div>
 
           <div className="bg-purple-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-purple-800">Bullets</h4>
+            <h4 className="font-semibold text-purple-800">Responsibilities</h4>
             <p className="text-purple-600 text-sm">
-              {resumeJSON.sections?.reduce((total, section) => 
-                total + section.entries.reduce((entryTotal, entry) => 
-                  entryTotal + (entry.bullets?.length || 0), 0
-                ), 0) || 0} total bullets
+              {resumeJSON.experience?.reduce((total, job) => total + (job.responsibilities?.length || 0), 0) || 
+               resumeJSON.sections?.reduce((total, section) => 
+                 total + section.entries.reduce((entryTotal, entry) => 
+                   entryTotal + (entry.bullets?.length || 0), 0
+                 ), 0) || 0} total responsibilities
             </p>
             <p className="text-purple-600 text-sm">
               {resumeJSON.sections?.reduce((total, section) => 
                 total + section.entries.reduce((entryTotal, entry) => 
                   entryTotal + (entry.bullets?.filter(b => b.enabled)?.length || 0), 0
-                ), 0) || 0} enabled bullets
+                ), 0) || 0} enabled bullets (legacy)
             </p>
           </div>
 
           <div className="bg-orange-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-orange-800">AI Content</h4>
+            <h4 className="font-semibold text-orange-800">Skills & Education</h4>
             <p className="text-orange-600 text-sm">
-              {resumeJSON.sections?.reduce((total, section) => 
-                total + section.entries.reduce((entryTotal, entry) => 
-                  entryTotal + (entry.bullets?.filter(b => b.origin === 'ai')?.length || 0), 0
-                ), 0) || 0} AI bullets
+              {Object.keys(resumeJSON.technical_skills || {}).length} skill categories
             </p>
             <p className="text-orange-600 text-sm">
-              {resumeJSON.sections?.reduce((total, section) => 
-                total + section.entries.reduce((entryTotal, entry) => 
-                  entryTotal + (entry.bullets?.filter(b => b.origin === 'ai' && b.enabled)?.length || 0), 0
-                ), 0) || 0} enabled AI bullets
+              {resumeJSON.education?.length || 0} education entries
+            </p>
+            <p className="text-orange-600 text-sm">
+              {resumeJSON.certifications?.length || 0} certifications
             </p>
           </div>
         </div>

@@ -433,7 +433,7 @@ const ResumeEditor = () => {
     // You can add any drag start logic here if needed
   };
 
-  if (!resumeJSON || !resumeJSON.sections || resumeJSON.sections.length === 0) {
+  if (!resumeJSON || ((!resumeJSON.sections || resumeJSON.sections.length === 0) && (!resumeJSON.experience || resumeJSON.experience.length === 0))) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg p-8">
@@ -441,6 +441,76 @@ const ResumeEditor = () => {
             Resume Editor
           </h2>
           <p className="text-gray-600">No resume data available. Please upload or paste your resume first.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If using new schema, show a simple view for now
+  if (resumeJSON.experience && resumeJSON.experience.length > 0) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            Resume Editor
+          </h2>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Professional Experience</h3>
+              {resumeJSON.experience.map((job, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                      <p className="text-gray-600">{job.company} - {job.location}</p>
+                    </div>
+                    <span className="text-sm text-gray-500">{job.dates}</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    {job.responsibilities.map((responsibility, respIndex) => (
+                      <li key={respIndex} className="text-sm text-gray-700">{responsibility}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            
+            {resumeJSON.education && resumeJSON.education.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Education</h3>
+                {resumeJSON.education.map((edu, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
+                    <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
+                    <p className="text-gray-600">{edu.institution} - {edu.location}</p>
+                    <p className="text-sm text-gray-500">{edu.graduation_date}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {resumeJSON.technical_skills && Object.keys(resumeJSON.technical_skills).length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Technical Skills</h3>
+                {Object.entries(resumeJSON.technical_skills).map(([category, skills]) => (
+                  skills.length > 0 && (
+                    <div key={category} className="mb-3">
+                      <h4 className="font-medium text-gray-800 capitalize">
+                        {category.replace(/_/g, ' ')}
+                      </h4>
+                      <p className="text-sm text-gray-600">{skills.join(', ')}</p>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+
+            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                <strong>Note:</strong> This is a simplified view of your parsed resume. 
+                The full editor with drag-and-drop functionality will be available in a future update.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );

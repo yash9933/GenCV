@@ -66,14 +66,30 @@ const ResumeInputForm = () => {
     }
 
     try {
-      console.log('Extracting resume to JSON...');
+      console.log('Parsing resume with AI...');
       
-      // Extract resume to structured JSON
-      const resumeJSON = extractResumeToJSON(state.originalResume);
-      console.log('Extracted resume JSON:', resumeJSON);
+      // Parse resume using AI
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resumeText: state.originalResume,
+          jobDescription: state.jobDescription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to parse resume');
+      }
+
+      console.log('Parsed resume JSON:', data.data);
       
       // Store the structured resume data
-      actions.setResumeJSON(resumeJSON);
+      actions.setResumeJSON(data.data);
       
       console.log('Extracting skills from job description...');
       

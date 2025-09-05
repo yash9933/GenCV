@@ -27,6 +27,20 @@ const SkillChecklist = () => {
   };
 
   /**
+   * Copy JSON to clipboard for debugging
+   */
+  const handleCopyJSON = async () => {
+    try {
+      const jsonString = JSON.stringify(state.resumeJSON, null, 2);
+      await navigator.clipboard.writeText(jsonString);
+      toast.success('JSON copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy JSON:', error);
+      toast.error('Failed to copy JSON to clipboard');
+    }
+  };
+
+  /**
    * Handle generate documents
    */
   const handleGenerateDocuments = async () => {
@@ -87,23 +101,11 @@ const SkillChecklist = () => {
        const originalBullets = extractBulletPoints(state.originalResume);
 
        // Add AI bullets to the resume JSON structure
-       if (allNewBullets.length > 0 && state.resumeJSON.sections) {
-         // Find the Professional Experience section
-         const experienceSectionIndex = state.resumeJSON.sections.findIndex(section => 
-           section.title === 'Professional Experience'
-         );
-         
-         if (experienceSectionIndex !== -1 && state.resumeJSON.sections[experienceSectionIndex].entries.length > 0) {
-           // Add AI bullets to the first experience entry
-           const aiBullets = allNewBullets.map(bullet => ({
-             id: bullet.id,
-             text: bullet.text,
-             origin: 'ai',
-             enabled: false
-           }));
-           
-           actions.addAIBullets(experienceSectionIndex, 0, aiBullets);
-         }
+       if (allNewBullets.length > 0) {
+         // For new schema, we'll store AI bullets in a separate field for now
+         // This can be enhanced later to integrate with the experience section
+         console.log('AI bullets generated:', allNewBullets);
+         // TODO: Integrate AI bullets with the new schema structure
        }
        
        actions.setGeneratedBullets(allNewBullets);
@@ -161,6 +163,32 @@ const SkillChecklist = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* TEMPORARY: JSON Debugging Section */}
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">
+              🐛 Debug: AI-Generated Resume JSON
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyJSON}
+              className="text-xs"
+            >
+              📋 Copy JSON
+            </Button>
+          </div>
+          <div className="bg-white border border-gray-300 rounded p-3 max-h-64 overflow-y-auto">
+            <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+              {JSON.stringify(state.resumeJSON, null, 2)}
+            </pre>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 italic">
+            This section shows the parsed resume data for debugging purposes. 
+            It will be removed in production.
+          </p>
         </div>
 
         <div className="flex justify-between items-center">

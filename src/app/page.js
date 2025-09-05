@@ -107,14 +107,20 @@ function AppContent() {
     // Only allow navigation to completed steps or current step
     if (step === 'input' || 
         (step === 'skills' && state.isInputSubmitted) ||
-        (step === 'editor' && state.isInputSubmitted && state.resumeJSON.sections.length > 0)) {
+        (step === 'editor' && state.isInputSubmitted && (
+          (state.resumeJSON.experience && state.resumeJSON.experience.length > 0) ||
+          (state.resumeJSON.sections && state.resumeJSON.sections.length > 0)
+        ))) {
       actions.setCurrentStep(step);
     }
   };
 
   // Check if steps are accessible
   const isSkillsAccessible = state.isInputSubmitted;
-  const isEditorAccessible = state.isInputSubmitted && state.resumeJSON.sections.length > 0;
+  const isEditorAccessible = state.isInputSubmitted && (
+    (state.resumeJSON.experience && state.resumeJSON.experience.length > 0) ||
+    (state.resumeJSON.sections && state.resumeJSON.sections.length > 0)
+  );
 
   // Render different components based on current step
   const renderCurrentStep = () => {

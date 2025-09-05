@@ -111,12 +111,77 @@ const styles = StyleSheet.create({
     fontSize: 9,
     lineHeight: 1.3,
     color: '#000'
+  },
+  jobEntry: {
+    marginBottom: 10
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 3
+  },
+  jobTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 1
+  },
+  jobCompany: {
+    fontSize: 9,
+    color: '#000'
+  },
+  jobLocation: {
+    fontSize: 9,
+    color: '#000'
+  },
+  jobDates: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'right'
+  },
+  educationEntry: {
+    marginBottom: 8
+  },
+  degree: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 1
+  },
+  institution: {
+    fontSize: 9,
+    color: '#000'
+  },
+  educationLocation: {
+    fontSize: 9,
+    color: '#000'
+  },
+  graduationDate: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#000'
+  },
+  skillCategory: {
+    marginBottom: 4
+  },
+  skillCategoryTitle: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 2
+  },
+  skills: {
+    fontSize: 9,
+    color: '#000',
+    lineHeight: 1.2
   }
 });
 
 export const ResumeTemplate = ({ resume }) => {
-  // Check if resume or its sections are null/undefined at the top
-  if (!resume || !resume.sections) {
+  // Check if resume data is available
+  if (!resume || (!resume.name && !resume.sections)) {
     return (
       <Document>
         <Page size="LETTER" style={styles.page}>
@@ -136,15 +201,15 @@ export const ResumeTemplate = ({ resume }) => {
       <Page size="LETTER" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          {resume.metadata && resume.metadata.name && (
-            <Text style={styles.name}>{resume.metadata.name}</Text>
+          {resume.name && (
+            <Text style={styles.name}>{resume.name}</Text>
           )}
-          {resume.metadata && resume.metadata.contact && (
+          {resume.contact && (
             <Text style={styles.contact}>
               {[
-                resume.metadata.contact.phone,
-                resume.metadata.contact.email,
-                ...(resume.metadata.contact.links || [])
+                resume.contact.phone,
+                resume.contact.email,
+                resume.contact.linkedin
               ]
                 .filter(Boolean)
                 .join(' • ')}
@@ -153,16 +218,103 @@ export const ResumeTemplate = ({ resume }) => {
         </View>
 
         {/* Summary */}
-        {resume.metadata && resume.metadata.summary && (
+        {resume.summary && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>SUMMARY</Text>
             <View style={styles.sectionRule} />
-            <Text style={styles.summary}>{resume.metadata.summary}</Text>
+            <Text style={styles.summary}>{resume.summary}</Text>
           </View>
         )}
 
-        {/* Sections */}
-        {resume.sections
+        {/* Experience Section */}
+        {resume.experience && resume.experience.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>PROFESSIONAL EXPERIENCE</Text>
+            <View style={styles.sectionRule} />
+            {resume.experience.map((job, index) => (
+              <View key={index} style={styles.jobEntry}>
+                <View style={styles.jobHeader}>
+                  <Text style={styles.jobTitle}>{job.title}</Text>
+                  <Text style={styles.jobCompany}>{job.company}</Text>
+                  <Text style={styles.jobLocation}>{job.location}</Text>
+                  <Text style={styles.jobDates}>{job.dates}</Text>
+                </View>
+                {job.responsibilities && job.responsibilities.length > 0 && (
+                  <View style={styles.bullets}>
+                    {job.responsibilities.map((bullet, bulletIndex) => (
+                      <Text key={bulletIndex} style={styles.bullet}>
+                        • {bullet}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Education Section */}
+        {resume.education && resume.education.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
+            <View style={styles.sectionRule} />
+            {resume.education.map((edu, index) => (
+              <View key={index} style={styles.educationEntry}>
+                <Text style={styles.degree}>{edu.degree}</Text>
+                <Text style={styles.institution}>{edu.institution}</Text>
+                <Text style={styles.educationLocation}>{edu.location}</Text>
+                <Text style={styles.graduationDate}>{edu.graduation_date}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Technical Skills Section */}
+        {resume.technical_skills && Object.keys(resume.technical_skills).length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>TECHNICAL SKILLS</Text>
+            <View style={styles.sectionRule} />
+            {Object.entries(resume.technical_skills).map(([category, skills]) => (
+              skills.length > 0 && (
+                <View key={category} style={styles.skillCategory}>
+                  <Text style={styles.skillCategoryTitle}>
+                    {category.replace(/_/g, ' ').toUpperCase()}
+                  </Text>
+                  <Text style={styles.skills}>
+                    {skills.join(', ')}
+                  </Text>
+                </View>
+              )
+            ))}
+          </View>
+        )}
+
+        {/* Volunteer Section */}
+        {resume.volunteer && resume.volunteer.title && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>VOLUNTEER</Text>
+            <View style={styles.sectionRule} />
+            <View style={styles.jobEntry}>
+              <View style={styles.jobHeader}>
+                <Text style={styles.jobTitle}>{resume.volunteer.title}</Text>
+                <Text style={styles.jobCompany}>{resume.volunteer.organization}</Text>
+                <Text style={styles.jobDates}>{resume.volunteer.dates}</Text>
+              </View>
+              {resume.volunteer.responsibilities && resume.volunteer.responsibilities.length > 0 && (
+                <View style={styles.bullets}>
+                  {resume.volunteer.responsibilities.map((bullet, bulletIndex) => (
+                    <Text key={bulletIndex} style={styles.bullet}>
+                      • {bullet}
+                    </Text>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Legacy Sections Support */}
+        {resume.sections && resume.sections
           .filter(section => section && section.entries && section.entries.length > 0)
           .map((section, sIndex) => ({ ...section, originalIndex: sIndex }))
           .sort((a, b) => {

@@ -8,16 +8,29 @@ const initialState = {
   jobDescription: '',
   originalResume: '',
   resumeJSON: {
-    metadata: {
-      name: '',
-      contact: {
-        phone: '',
-        email: '',
-        links: []
-      },
-      summary: ''
+    name: '',
+    contact: {
+      phone: '',
+      email: '',
+      linkedin: ''
     },
-    sections: []
+    certifications: [],
+    summary: '',
+    experience: [],
+    technical_skills: {
+      project_program_management: [],
+      business_analysis_documentation: [],
+      data_reporting_tools: [],
+      collaboration_communication: [],
+      testing_quality_assurance: []
+    },
+    volunteer: {
+      title: '',
+      organization: '',
+      dates: '',
+      responsibilities: []
+    },
+    education: []
   },
   
   // Skills
