@@ -121,26 +121,40 @@ const SkillChecklist = () => {
        if (allNewBullets.length > 0) {
          // Integrate AI bullets with the new schema experience section
          
-         // Group AI bullets by category and add them to the first experience entry
          if (updatedResumeJSON.experience && updatedResumeJSON.experience.length > 0) {
-           const firstJob = updatedResumeJSON.experience[0];
-           if (!firstJob.responsibilities) {
-             firstJob.responsibilities = [];
-           }
+           const experienceCount = updatedResumeJSON.experience.length;
            
-           // Add AI bullets to the first job
-           allNewBullets.forEach(aiBullet => {
-             firstJob.responsibilities.push({
-               text: aiBullet.text,
-               enabled: false, // AI bullets start as disabled
-               origin: 'ai',
-               category: aiBullet.category
-             });
+           // Distribute AI bullets evenly across all experience entries
+           const bulletsPerExperience = Math.ceil(allNewBullets.length / experienceCount);
+           
+           console.log(`Distributing ${allNewBullets.length} AI bullets across ${experienceCount} experiences (${bulletsPerExperience} bullets per experience)`);
+           
+           // Distribute bullets across all experiences
+           allNewBullets.forEach((aiBullet, index) => {
+             const experienceIndex = Math.floor(index / bulletsPerExperience);
+             
+             // Ensure we don't exceed the number of experiences
+             if (experienceIndex < experienceCount) {
+               const job = updatedResumeJSON.experience[experienceIndex];
+               if (!job.responsibilities) {
+                 job.responsibilities = [];
+               }
+               
+               // Add AI bullet at the TOP of the responsibilities array (unshift instead of push)
+               job.responsibilities.unshift({
+                 text: aiBullet.text,
+                 enabled: false, // AI bullets start as disabled
+                 origin: 'ai',
+                 category: aiBullet.category
+               });
+               
+               console.log(`Added AI bullet to experience ${experienceIndex + 1}: ${aiBullet.text.substring(0, 50)}...`);
+             }
            });
            
            // Update the resume JSON with AI bullets integrated
            actions.setResumeJSON(updatedResumeJSON);
-           console.log('AI bullets integrated with experience section:', allNewBullets.length, 'bullets added');
+           console.log('AI bullets distributed across all experience sections:', allNewBullets.length, 'bullets added');
            console.log('Updated resume JSON with AI bullets:', updatedResumeJSON);
          }
        }
