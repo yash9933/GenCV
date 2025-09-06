@@ -597,8 +597,6 @@ const ResumeEditor = () => {
                       onUpdate={(updatedJob) => actions.updateExperience(index, updatedJob)}
                       onDelete={() => actions.deleteExperience(index)}
                       onToggleBullet={(bulletIndex, enabled) => actions.toggleExperienceBullet(index, bulletIndex, enabled)}
-                      onAddBullet={(bulletText) => actions.addExperienceBullet(index, bulletText)}
-                      onRemoveBullet={(bulletIndex) => actions.removeExperienceBullet(index, bulletIndex)}
                       onUpdateBullet={(bulletIndex, newText) => actions.updateExperienceBullet(index, bulletIndex, newText)}
                       onReorderBullets={(fromIndex, toIndex) => actions.reorderExperienceBullets(index, fromIndex, toIndex)}
                     />
@@ -1318,14 +1316,11 @@ const ExperienceWithBullets = ({
   onUpdate, 
   onDelete, 
   onToggleBullet, 
-  onAddBullet, 
-  onRemoveBullet, 
   onUpdateBullet, 
   onReorderBullets 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedJob, setEditedJob] = useState(job);
-  const [newBulletText, setNewBulletText] = useState('');
 
   const handleSave = () => {
     onUpdate(editedJob);
@@ -1337,12 +1332,6 @@ const ExperienceWithBullets = ({
     setIsEditing(false);
   };
 
-  const handleAddBullet = () => {
-    if (newBulletText.trim()) {
-      onAddBullet(newBulletText.trim());
-      setNewBulletText('');
-    }
-  };
 
   const handleBulletDragEnd = (event) => {
     const { active, over } = event;
@@ -1453,17 +1442,6 @@ const ExperienceWithBullets = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h6 className="font-medium text-gray-800">Responsibilities</h6>
-              <div className="flex items-center space-x-2">
-                <Input
-                  value={newBulletText}
-                  onChange={(e) => setNewBulletText(e.target.value)}
-                  placeholder="Add new bullet point..."
-                  className="w-64"
-                />
-                <Button variant="outline" size="sm" onClick={handleAddBullet}>
-                  Add
-                </Button>
-              </div>
             </div>
             
             <DndContext onDragEnd={handleBulletDragEnd}>
@@ -1474,7 +1452,6 @@ const ExperienceWithBullets = ({
                     bullet={bullet}
                     bulletIndex={bulletIndex}
                     onToggle={(enabled) => onToggleBullet(bulletIndex, enabled)}
-                    onRemove={() => onRemoveBullet(bulletIndex)}
                     onUpdate={(newText) => onUpdateBullet(bulletIndex, newText)}
                   />
                 ))}
@@ -1488,7 +1465,7 @@ const ExperienceWithBullets = ({
 };
 
 // Bullet Item Component
-const BulletItem = ({ bullet, bulletIndex, onToggle, onRemove, onUpdate }) => {
+const BulletItem = ({ bullet, bulletIndex, onToggle, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(bullet.text);
 
@@ -1570,14 +1547,6 @@ const BulletItem = ({ bullet, bulletIndex, onToggle, onRemove, onUpdate }) => {
                 className="text-xs"
               >
                 Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRemove}
-                className="text-xs text-red-600 hover:text-red-700"
-              >
-                Remove
               </Button>
             </div>
           </div>
