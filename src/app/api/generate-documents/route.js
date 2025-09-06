@@ -151,7 +151,7 @@ function transformGPTFormatToLegacy(gptResponse, selectedSkills) {
  */
 export async function POST(request) {
   try {
-    console.log('API: Starting document generation request...');
+    console.log('API: Starting combined resume parsing and document generation request...');
     
     // Parse request body
     const body = await request.json();
@@ -194,7 +194,22 @@ export async function POST(request) {
     
     console.log(`API: Using ${aiProvider.toUpperCase()} AI provider`);
 
-    // Generate content using AI
+    // Step 1: Parse resume text into structured JSON
+    console.log('API: Step 1 - Parsing resume text into structured JSON...');
+    const parsedResume = await aiFactory.generateResumeContent(
+      aiProvider,
+      {
+        jobDescription: jobDescription || '',
+        resumeText,
+        selectedSkills: [] // Empty for initial parsing
+      }
+    );
+
+    console.log('API: Resume parsing completed successfully');
+    console.log('API: Parsed resume structure:', Object.keys(parsedResume));
+
+    // Step 2: Generate enhanced content (bullets and cover letter)
+    console.log('API: Step 2 - Generating enhanced content...');
     const generatedContent = await aiFactory.generateResumeContent(
       aiProvider,
       {
@@ -204,26 +219,29 @@ export async function POST(request) {
       }
     );
 
-    console.log('API: AI generation completed successfully');
+    console.log('API: Content generation completed successfully');
     console.log('API: Generated content structure:', Object.keys(generatedContent));
 
     // Transform the new standardized schema back to the expected format
     const transformedContent = transformToLegacyFormat(generatedContent, selectedSkills);
     console.log('API: Transformed content structure:', Object.keys(transformedContent));
 
-    // Return the transformed content
+    // Return both parsed resume and generated content
     return NextResponse.json({
       success: true,
-      data: transformedContent
+      data: {
+        ...transformedContent,
+        parsedResume: parsedResume // Include the parsed resume for the frontend
+      }
     });
 
   } catch (error) {
-    console.error('API: Error in document generation:', error);
+    console.error('API: Error in combined parsing and generation:', error);
     
     // Return appropriate error response
     return NextResponse.json(
       { 
-        error: 'Failed to generate documents',
+        error: 'Failed to parse resume and generate documents',
         details: error.message 
       },
       { status: 500 }

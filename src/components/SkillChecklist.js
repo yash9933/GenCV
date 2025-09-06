@@ -78,7 +78,7 @@ const SkillChecklist = () => {
       console.log('Data.data structure:', data.data ? Object.keys(data.data) : 'data.data is undefined');
 
       // Process the generated content
-      const { suggestedSkills, newBullets, coverLetter } = data.data;
+      const { suggestedSkills, newBullets, coverLetter, parsedResume } = data.data;
 
       // Update suggested skills if new ones were provided
       if (suggestedSkills && suggestedSkills.length > 0) {
@@ -107,10 +107,19 @@ const SkillChecklist = () => {
        // Extract original bullets from resume text
        const originalBullets = extractBulletPoints(state.originalResume);
 
+       // Start with the parsed resume or current resume JSON
+       let updatedResumeJSON = parsedResume ? { ...parsedResume } : { ...state.resumeJSON };
+       
+       // Store the parsed resume JSON first
+       if (parsedResume) {
+         console.log('Setting parsed resume JSON:', parsedResume);
+         actions.setResumeJSON(parsedResume);
+         updatedResumeJSON = { ...parsedResume };
+       }
+
        // Add AI bullets to the resume JSON structure
        if (allNewBullets.length > 0) {
          // Integrate AI bullets with the new schema experience section
-         const updatedResumeJSON = { ...state.resumeJSON };
          
          // Group AI bullets by category and add them to the first experience entry
          if (updatedResumeJSON.experience && updatedResumeJSON.experience.length > 0) {
@@ -129,8 +138,10 @@ const SkillChecklist = () => {
              });
            });
            
+           // Update the resume JSON with AI bullets integrated
            actions.setResumeJSON(updatedResumeJSON);
            console.log('AI bullets integrated with experience section:', allNewBullets.length, 'bullets added');
+           console.log('Updated resume JSON with AI bullets:', updatedResumeJSON);
          }
        }
        
@@ -138,7 +149,7 @@ const SkillChecklist = () => {
        actions.setCoverLetter(coverLetter || '');
        actions.setCurrentStep('editor');
       
-      toast.success('Documents generated successfully!');
+      toast.success('Resume parsed and documents generated successfully!');
 
     } catch (error) {
       console.error('Error generating documents:', error);

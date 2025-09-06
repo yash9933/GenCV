@@ -66,49 +66,24 @@ const ResumeInputForm = () => {
     }
 
     try {
-      console.log('Parsing resume with AI...');
-      
-      // Parse resume using AI
-      const response = await fetch('/api/parse-resume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resumeText: state.originalResume,
-          jobDescription: state.jobDescription,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to parse resume');
-      }
-
-      console.log('Parsed resume JSON:', data.data);
-      
-      // Store the structured resume data
-      actions.setResumeJSON(data.data);
-      
       console.log('Extracting skills from job description...');
       
-      // Extract skills from job description
+      // Extract skills from job description (no AI call here)
       const skills = extractSkillsFromJD(state.jobDescription);
       actions.setSuggestedSkills(skills);
       
       // Set all skills as selected by default
       actions.setSelectedSkills(skills);
       
-      // Move to skills selection step
+      // Move to skills selection step (resume parsing will happen later)
       actions.setInputSubmitted(true);
       actions.setCurrentStep('skills');
       
-      toast.success('Resume parsed and skills extracted successfully');
+      toast.success('Skills extracted successfully. Resume will be parsed when you generate documents.');
       
     } catch (error) {
-      console.error('Error processing resume:', error);
-      toast.error('Failed to process resume');
+      console.error('Error processing form:', error);
+      toast.error('Failed to process form');
     }
   };
 
