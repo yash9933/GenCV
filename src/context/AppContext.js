@@ -73,7 +73,27 @@ const ACTIONS = {
   REORDER_SKILLS: 'REORDER_SKILLS',
   ADD_AI_BULLETS: 'ADD_AI_BULLETS',
   LOAD_FROM_STORAGE: 'LOAD_FROM_STORAGE',
-  SAVE_TO_STORAGE: 'SAVE_TO_STORAGE'
+  SAVE_TO_STORAGE: 'SAVE_TO_STORAGE',
+  // New schema editing actions
+  UPDATE_EXPERIENCE: 'UPDATE_EXPERIENCE',
+  UPDATE_EDUCATION: 'UPDATE_EDUCATION',
+  UPDATE_SKILLS: 'UPDATE_SKILLS',
+  UPDATE_CONTACT: 'UPDATE_CONTACT',
+  UPDATE_SUMMARY: 'UPDATE_SUMMARY',
+  UPDATE_CERTIFICATIONS: 'UPDATE_CERTIFICATIONS',
+  UPDATE_VOLUNTEER: 'UPDATE_VOLUNTEER',
+  REORDER_EXPERIENCE: 'REORDER_EXPERIENCE',
+  REORDER_EDUCATION: 'REORDER_EDUCATION',
+  DELETE_EXPERIENCE: 'DELETE_EXPERIENCE',
+  DELETE_EDUCATION: 'DELETE_EDUCATION',
+  ADD_EXPERIENCE: 'ADD_EXPERIENCE',
+  ADD_EDUCATION: 'ADD_EDUCATION',
+  // Bullet management actions for new schema
+  TOGGLE_EXPERIENCE_BULLET: 'TOGGLE_EXPERIENCE_BULLET',
+  ADD_EXPERIENCE_BULLET: 'ADD_EXPERIENCE_BULLET',
+  REMOVE_EXPERIENCE_BULLET: 'REMOVE_EXPERIENCE_BULLET',
+  REORDER_EXPERIENCE_BULLETS: 'REORDER_EXPERIENCE_BULLETS',
+  UPDATE_EXPERIENCE_BULLET: 'UPDATE_EXPERIENCE_BULLET'
 };
 
 // Reducer function
@@ -209,6 +229,184 @@ function appReducer(state, action) {
       // This action doesn't change state, just triggers localStorage save
       return state;
       
+    // New schema editing actions
+    case ACTIONS.UPDATE_EXPERIENCE:
+      const { experienceIndex, updatedExperience } = action.payload;
+      const updatedExpResumeJSON = { ...state.resumeJSON };
+      if (updatedExpResumeJSON.experience && updatedExpResumeJSON.experience[experienceIndex]) {
+        updatedExpResumeJSON.experience[experienceIndex] = updatedExperience;
+      }
+      return { ...state, resumeJSON: updatedExpResumeJSON };
+      
+    case ACTIONS.UPDATE_EDUCATION:
+      const { educationIndex, updatedEducation } = action.payload;
+      const updatedEduResumeJSON = { ...state.resumeJSON };
+      if (updatedEduResumeJSON.education && updatedEduResumeJSON.education[educationIndex]) {
+        updatedEduResumeJSON.education[educationIndex] = updatedEducation;
+      }
+      return { ...state, resumeJSON: updatedEduResumeJSON };
+      
+    case ACTIONS.UPDATE_SKILLS:
+      const { skillCategory, updatedSkills } = action.payload;
+      const updatedSkillsResumeJSON = { ...state.resumeJSON };
+      if (updatedSkillsResumeJSON.technical_skills) {
+        updatedSkillsResumeJSON.technical_skills[skillCategory] = updatedSkills;
+      }
+      return { ...state, resumeJSON: updatedSkillsResumeJSON };
+      
+    case ACTIONS.UPDATE_CONTACT:
+      const { contactField, contactValue } = action.payload;
+      const updatedContactResumeJSON = { ...state.resumeJSON };
+      if (updatedContactResumeJSON.contact) {
+        updatedContactResumeJSON.contact[contactField] = contactValue;
+      }
+      return { ...state, resumeJSON: updatedContactResumeJSON };
+      
+    case ACTIONS.UPDATE_SUMMARY:
+      const updatedSummaryResumeJSON = { ...state.resumeJSON };
+      updatedSummaryResumeJSON.summary = action.payload;
+      return { ...state, resumeJSON: updatedSummaryResumeJSON };
+      
+    case ACTIONS.UPDATE_CERTIFICATIONS:
+      const updatedCertResumeJSON = { ...state.resumeJSON };
+      updatedCertResumeJSON.certifications = action.payload;
+      return { ...state, resumeJSON: updatedCertResumeJSON };
+      
+    case ACTIONS.UPDATE_VOLUNTEER:
+      const updatedVolunteerResumeJSON = { ...state.resumeJSON };
+      updatedVolunteerResumeJSON.volunteer = action.payload;
+      return { ...state, resumeJSON: updatedVolunteerResumeJSON };
+      
+    case ACTIONS.REORDER_EXPERIENCE:
+      const { fromIndex, toIndex } = action.payload;
+      const reorderedExpResumeJSON = { ...state.resumeJSON };
+      if (reorderedExpResumeJSON.experience) {
+        const [movedExperience] = reorderedExpResumeJSON.experience.splice(fromIndex, 1);
+        reorderedExpResumeJSON.experience.splice(toIndex, 0, movedExperience);
+      }
+      return { ...state, resumeJSON: reorderedExpResumeJSON };
+      
+    case ACTIONS.REORDER_EDUCATION:
+      const { fromIndex: eduFromIndex, toIndex: eduToIndex } = action.payload;
+      const reorderedEduResumeJSON = { ...state.resumeJSON };
+      if (reorderedEduResumeJSON.education) {
+        const [movedEducation] = reorderedEduResumeJSON.education.splice(eduFromIndex, 1);
+        reorderedEduResumeJSON.education.splice(eduToIndex, 0, movedEducation);
+      }
+      return { ...state, resumeJSON: reorderedEduResumeJSON };
+      
+    case ACTIONS.DELETE_EXPERIENCE:
+      const { deleteExpIndex } = action.payload;
+      const deletedExpResumeJSON = { ...state.resumeJSON };
+      if (deletedExpResumeJSON.experience && deletedExpResumeJSON.experience[deleteExpIndex]) {
+        deletedExpResumeJSON.experience.splice(deleteExpIndex, 1);
+      }
+      return { ...state, resumeJSON: deletedExpResumeJSON };
+      
+    case ACTIONS.DELETE_EDUCATION:
+      const { deleteEduIndex } = action.payload;
+      const deletedEduResumeJSON = { ...state.resumeJSON };
+      if (deletedEduResumeJSON.education && deletedEduResumeJSON.education[deleteEduIndex]) {
+        deletedEduResumeJSON.education.splice(deleteEduIndex, 1);
+      }
+      return { ...state, resumeJSON: deletedEduResumeJSON };
+      
+    case ACTIONS.ADD_EXPERIENCE:
+      const newExperience = action.payload;
+      const addedExpResumeJSON = { ...state.resumeJSON };
+      if (!addedExpResumeJSON.experience) {
+        addedExpResumeJSON.experience = [];
+      }
+      addedExpResumeJSON.experience.push(newExperience);
+      return { ...state, resumeJSON: addedExpResumeJSON };
+      
+    case ACTIONS.ADD_EDUCATION:
+      const newEducation = action.payload;
+      const addedEduResumeJSON = { ...state.resumeJSON };
+      if (!addedEduResumeJSON.education) {
+        addedEduResumeJSON.education = [];
+      }
+      addedEduResumeJSON.education.push(newEducation);
+      return { ...state, resumeJSON: addedEduResumeJSON };
+      
+    // Bullet management actions for new schema
+    case ACTIONS.TOGGLE_EXPERIENCE_BULLET:
+      const { expIndex, bulletIndex, enabled: bulletEnabled } = action.payload;
+      const toggledExpResumeJSON = { ...state.resumeJSON };
+      if (toggledExpResumeJSON.experience && toggledExpResumeJSON.experience[expIndex]) {
+        const job = toggledExpResumeJSON.experience[expIndex];
+        if (job.responsibilities && job.responsibilities[bulletIndex]) {
+          // For new schema, we'll add an enabled property to track bullet state
+          if (job.responsibilities[bulletIndex].enabled === undefined) {
+            job.responsibilities[bulletIndex] = {
+              text: job.responsibilities[bulletIndex],
+              enabled: bulletEnabled
+            };
+          } else {
+            job.responsibilities[bulletIndex].enabled = bulletEnabled;
+          }
+        }
+      }
+      return { ...state, resumeJSON: toggledExpResumeJSON };
+      
+    case ACTIONS.ADD_EXPERIENCE_BULLET:
+      const { expIndex: addExpIndex, bulletText } = action.payload;
+      const addedBulletResumeJSON = { ...state.resumeJSON };
+      if (addedBulletResumeJSON.experience && addedBulletResumeJSON.experience[addExpIndex]) {
+        const job = addedBulletResumeJSON.experience[addExpIndex];
+        if (!job.responsibilities) {
+          job.responsibilities = [];
+        }
+        job.responsibilities.push({
+          text: bulletText,
+          enabled: true,
+          origin: 'user'
+        });
+      }
+      return { ...state, resumeJSON: addedBulletResumeJSON };
+      
+    case ACTIONS.REMOVE_EXPERIENCE_BULLET:
+      const { expIndex: removeExpIndex, bulletIndex: removeBulletIndex } = action.payload;
+      const removedBulletResumeJSON = { ...state.resumeJSON };
+      if (removedBulletResumeJSON.experience && removedBulletResumeJSON.experience[removeExpIndex]) {
+        const job = removedBulletResumeJSON.experience[removeExpIndex];
+        if (job.responsibilities && job.responsibilities[removeBulletIndex]) {
+          job.responsibilities.splice(removeBulletIndex, 1);
+        }
+      }
+      return { ...state, resumeJSON: removedBulletResumeJSON };
+      
+    case ACTIONS.REORDER_EXPERIENCE_BULLETS:
+      const { expIndex: reorderExpIndex, fromIndex: bulletFromIndex, toIndex: bulletToIndex } = action.payload;
+      const reorderedBulletsResumeJSON = { ...state.resumeJSON };
+      if (reorderedBulletsResumeJSON.experience && reorderedBulletsResumeJSON.experience[reorderExpIndex]) {
+        const job = reorderedBulletsResumeJSON.experience[reorderExpIndex];
+        if (job.responsibilities) {
+          const [movedBullet] = job.responsibilities.splice(bulletFromIndex, 1);
+          job.responsibilities.splice(bulletToIndex, 0, movedBullet);
+        }
+      }
+      return { ...state, resumeJSON: reorderedBulletsResumeJSON };
+      
+    case ACTIONS.UPDATE_EXPERIENCE_BULLET:
+      const { expIndex: updateExpIndex, bulletIndex: updateBulletIndex, newText } = action.payload;
+      const updatedBulletResumeJSON = { ...state.resumeJSON };
+      if (updatedBulletResumeJSON.experience && updatedBulletResumeJSON.experience[updateExpIndex]) {
+        const job = updatedBulletResumeJSON.experience[updateExpIndex];
+        if (job.responsibilities && job.responsibilities[updateBulletIndex]) {
+          if (typeof job.responsibilities[updateBulletIndex] === 'string') {
+            job.responsibilities[updateBulletIndex] = {
+              text: newText,
+              enabled: true,
+              origin: 'user'
+            };
+          } else {
+            job.responsibilities[updateBulletIndex].text = newText;
+          }
+        }
+      }
+      return { ...state, resumeJSON: updatedBulletResumeJSON };
+      
     default:
       return state;
   }
@@ -327,6 +525,116 @@ export function AppProvider({ children }) {
       dispatch({ 
         type: ACTIONS.ADD_AI_BULLETS, 
         payload: { sectionIndex, entryIndex, aiBullets } 
+      }),
+      
+    // New schema editing action creators
+    updateExperience: (experienceIndex, updatedExperience) =>
+      dispatch({
+        type: ACTIONS.UPDATE_EXPERIENCE,
+        payload: { experienceIndex, updatedExperience }
+      }),
+      
+    updateEducation: (educationIndex, updatedEducation) =>
+      dispatch({
+        type: ACTIONS.UPDATE_EDUCATION,
+        payload: { educationIndex, updatedEducation }
+      }),
+      
+    updateSkills: (skillCategory, updatedSkills) =>
+      dispatch({
+        type: ACTIONS.UPDATE_SKILLS,
+        payload: { skillCategory, updatedSkills }
+      }),
+      
+    updateContact: (contactField, contactValue) =>
+      dispatch({
+        type: ACTIONS.UPDATE_CONTACT,
+        payload: { contactField, contactValue }
+      }),
+      
+    updateSummary: (summary) =>
+      dispatch({
+        type: ACTIONS.UPDATE_SUMMARY,
+        payload: summary
+      }),
+      
+    updateCertifications: (certifications) =>
+      dispatch({
+        type: ACTIONS.UPDATE_CERTIFICATIONS,
+        payload: certifications
+      }),
+      
+    updateVolunteer: (volunteer) =>
+      dispatch({
+        type: ACTIONS.UPDATE_VOLUNTEER,
+        payload: volunteer
+      }),
+      
+    reorderExperience: (fromIndex, toIndex) =>
+      dispatch({
+        type: ACTIONS.REORDER_EXPERIENCE,
+        payload: { fromIndex, toIndex }
+      }),
+      
+    reorderEducation: (fromIndex, toIndex) =>
+      dispatch({
+        type: ACTIONS.REORDER_EDUCATION,
+        payload: { fromIndex, toIndex }
+      }),
+      
+    deleteExperience: (experienceIndex) =>
+      dispatch({
+        type: ACTIONS.DELETE_EXPERIENCE,
+        payload: { deleteExpIndex: experienceIndex }
+      }),
+      
+    deleteEducation: (educationIndex) =>
+      dispatch({
+        type: ACTIONS.DELETE_EDUCATION,
+        payload: { deleteEduIndex: educationIndex }
+      }),
+      
+    addExperience: (newExperience) =>
+      dispatch({
+        type: ACTIONS.ADD_EXPERIENCE,
+        payload: newExperience
+      }),
+      
+    addEducation: (newEducation) =>
+      dispatch({
+        type: ACTIONS.ADD_EDUCATION,
+        payload: newEducation
+      }),
+      
+    // Bullet management action creators for new schema
+    toggleExperienceBullet: (expIndex, bulletIndex, enabled) =>
+      dispatch({
+        type: ACTIONS.TOGGLE_EXPERIENCE_BULLET,
+        payload: { expIndex, bulletIndex, enabled }
+      }),
+      
+    addExperienceBullet: (expIndex, bulletText) =>
+      dispatch({
+        type: ACTIONS.ADD_EXPERIENCE_BULLET,
+        payload: { expIndex, bulletText }
+      }),
+      
+    removeExperienceBullet: (expIndex, bulletIndex) =>
+      dispatch({
+        type: ACTIONS.REMOVE_EXPERIENCE_BULLET,
+        payload: { expIndex, bulletIndex }
+      }),
+      
+    reorderExperienceBullets: (expIndex, fromIndex, toIndex) =>
+      dispatch({
+        type: ACTIONS.REORDER_EXPERIENCE_BULLETS,
+        payload: { expIndex, fromIndex, toIndex }
+      }),
+      
+    updateExperienceBullet: (expIndex, bulletIndex, newText) =>
+      dispatch({
+        type: ACTIONS.UPDATE_EXPERIENCE_BULLET,
+        payload: { expIndex, bulletIndex, newText }
       }),
       
     clearStorage: () => {

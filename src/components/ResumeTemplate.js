@@ -181,19 +181,78 @@ const styles = StyleSheet.create({
 
 export const ResumeTemplate = ({ resume }) => {
   // Check if resume data is available
-  if (!resume || (!resume.name && !resume.sections)) {
+  if (!resume) {
+    console.error('ResumeTemplate: resume prop is null or undefined');
     return (
       <Document>
         <Page size="LETTER" style={styles.page}>
-          <Text>No resume data available</Text>
+          <Text>Error: No resume data provided</Text>
         </Page>
       </Document>
     );
   }
 
-  // Define a temporary function to handle the title style consistently
-  const getSectionTitleStyle = (title) => {
-    return styles.sectionTitleWithRule;
+  // Check if resume has any meaningful data
+  const hasNewSchema = resume.experience || resume.education || resume.technical_skills;
+  const hasOldSchema = resume.sections;
+  const hasName = resume.name;
+
+  if (!hasNewSchema && !hasOldSchema && !hasName) {
+    console.error('ResumeTemplate: resume has no meaningful data', resume);
+    return (
+      <Document>
+        <Page size="LETTER" style={styles.page}>
+          <Text>Error: Resume data is incomplete</Text>
+        </Page>
+      </Document>
+    );
+  }
+
+  // Helper function to safely render contact info
+  const renderContactInfo = () => {
+    if (!resume.contact) return null;
+    
+    const contactParts = [];
+    if (resume.contact.phone) contactParts.push(resume.contact.phone);
+    if (resume.contact.email) contactParts.push(resume.contact.email);
+    if (resume.contact.linkedin) contactParts.push(resume.contact.linkedin);
+    
+    if (contactParts.length === 0) return null;
+    
+    return <Text style={styles.contact}>{contactParts.join(' • ')}</Text>;
+  };
+
+  // Helper function to safely render responsibilities - simplified for PDF compatibility
+  const renderResponsibilities = (responsibilities) => {
+    if (!responsibilities || !Array.isArray(responsibilities)) return [];
+    
+    const validResponsibilities = [];
+    
+    for (let i = 0; i < responsibilities.length; i++) {
+      const responsibility = responsibilities[i];
+      
+      // Handle both string and object formats
+      let text = '';
+      let isEnabled = true;
+      
+      if (typeof responsibility === 'string') {
+        text = responsibility;
+        isEnabled = true;
+      } else if (responsibility && typeof responsibility === 'object') {
+        text = responsibility.text || '';
+        isEnabled = responsibility.enabled !== false;
+      }
+      
+      if (isEnabled && text) {
+        validResponsibilities.push(
+          <Text key={i} style={styles.bulletPoint}>
+            • {text}
+          </Text>
+        );
+      }
+    }
+    
+    return validResponsibilities;
   };
 
   return (
@@ -204,17 +263,7 @@ export const ResumeTemplate = ({ resume }) => {
           {resume.name && (
             <Text style={styles.name}>{resume.name}</Text>
           )}
-          {resume.contact && (
-            <Text style={styles.contact}>
-              {[
-                resume.contact.phone,
-                resume.contact.email,
-                resume.contact.linkedin
-              ]
-                .filter(Boolean)
-                .join(' • ')}
-            </Text>
-          )}
+          {renderContactInfo()}
         </View>
 
         {/* Summary */}
@@ -241,11 +290,7 @@ export const ResumeTemplate = ({ resume }) => {
                 </View>
                 {job.responsibilities && job.responsibilities.length > 0 && (
                   <View style={styles.bullets}>
-                    {job.responsibilities.map((bullet, bulletIndex) => (
-                      <Text key={bulletIndex} style={styles.bullet}>
-                        • {bullet}
-                      </Text>
-                    ))}
+                    {renderResponsibilities(job.responsibilities)}
                   </View>
                 )}
               </View>

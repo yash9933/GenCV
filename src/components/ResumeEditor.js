@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { downloadPDF } from '../lib/utils';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Textarea from './ui/Textarea';
 import {
   DndContext,
   closestCenter,
@@ -23,8 +26,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ToggleSwitch from './ui/ToggleSwitch';
-import Button from './ui/Button';
-import Input from './ui/Input';
 import toast from 'react-hot-toast';
 
 /**
@@ -370,6 +371,7 @@ const ResumeEditor = () => {
   const { state, actions } = useAppContext();
   const { resumeJSON } = state;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -433,6 +435,51 @@ const ResumeEditor = () => {
     // You can add any drag start logic here if needed
   };
 
+  // Drag and drop handlers for new schema
+  const handleExperienceDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = parseInt(active.id.toString().split('-')[1]);
+      const newIndex = parseInt(over.id.toString().split('-')[1]);
+      actions.reorderExperience(oldIndex, newIndex);
+    }
+  };
+
+  const handleEducationDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = parseInt(active.id.toString().split('-')[1]);
+      const newIndex = parseInt(over.id.toString().split('-')[1]);
+      actions.reorderEducation(oldIndex, newIndex);
+    }
+  };
+
+  // Handle PDF export for new schema
+  const handleExportPDF = async () => {
+    try {
+      setIsExporting(true);
+      
+      // Debug: Check resumeJSON before PDF generation
+      console.log('handleExportPDF: resumeJSON:', resumeJSON);
+      console.log('handleExportPDF: resumeJSON type:', typeof resumeJSON);
+      console.log('handleExportPDF: resumeJSON keys:', resumeJSON ? Object.keys(resumeJSON) : 'null/undefined');
+      
+      if (!resumeJSON) {
+        throw new Error('No resume data available for PDF generation');
+      }
+      
+      const name = resumeJSON.name || 'resume';
+      const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+      await downloadPDF(resumeJSON, filename);
+      toast.success('PDF file downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (!resumeJSON || ((!resumeJSON.sections || resumeJSON.sections.length === 0) && (!resumeJSON.experience || resumeJSON.experience.length === 0))) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -446,70 +493,181 @@ const ResumeEditor = () => {
     );
   }
 
-  // If using new schema, show a simple view for now
+  // If using new schema, show the full editor
   if (resumeJSON.experience && resumeJSON.experience.length > 0) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            Resume Editor
-          </h2>
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Professional Experience</h3>
-              {resumeJSON.experience.map((job, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{job.title}</h4>
-                      <p className="text-gray-600">{job.company} - {job.location}</p>
-                    </div>
-                    <span className="text-sm text-gray-500">{job.dates}</span>
-                  </div>
-                  <ul className="list-disc list-inside space-y-1">
-                    {job.responsibilities.map((responsibility, respIndex) => (
-                      <li key={respIndex} className="text-sm text-gray-700">{responsibility}</li>
-                    ))}
-                  </ul>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Resume Editor</h2>
+            <div className="flex space-x-4">
+              <Button
+                variant="outline"
+                onClick={() => actions.setCurrentStep('skills')}
+              >
+                Back to Skills
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleExportPDF}
+                disabled={isExporting}
+              >
+                {isExporting ? 'Exporting...' : 'Export PDF'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {/* Contact Information */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <Input
+                    value={resumeJSON.name || ''}
+                    onChange={(e) => actions.updateContact('name', e.target.value)}
+                    placeholder="Full Name"
+                  />
                 </div>
-              ))}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <Input
+                    value={resumeJSON.contact?.phone || ''}
+                    onChange={(e) => actions.updateContact('phone', e.target.value)}
+                    placeholder="Phone Number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <Input
+                    value={resumeJSON.contact?.email || ''}
+                    onChange={(e) => actions.updateContact('email', e.target.value)}
+                    placeholder="Email Address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
+                  <Input
+                    value={resumeJSON.contact?.linkedin || ''}
+                    onChange={(e) => actions.updateContact('linkedin', e.target.value)}
+                    placeholder="LinkedIn URL"
+                  />
+                </div>
+              </div>
             </div>
-            
-            {resumeJSON.education && resumeJSON.education.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Education</h3>
-                {resumeJSON.education.map((edu, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold text-gray-900">{edu.degree}</h4>
-                    <p className="text-gray-600">{edu.institution} - {edu.location}</p>
-                    <p className="text-sm text-gray-500">{edu.graduation_date}</p>
-                  </div>
-                ))}
+
+            {/* Summary */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Professional Summary</h3>
+              <Textarea
+                value={resumeJSON.summary || ''}
+                onChange={(e) => actions.updateSummary(e.target.value)}
+                placeholder="Write your professional summary..."
+                rows={4}
+              />
+            </div>
+
+            {/* Experience */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Professional Experience</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => actions.addExperience({
+                    title: '',
+                    company: '',
+                    location: '',
+                    dates: '',
+                    responsibilities: []
+                  })}
+                >
+                  Add Experience
+                </Button>
+              </div>
+              
+              <DndContext onDragEnd={handleExperienceDragEnd}>
+                <SortableContext items={resumeJSON.experience.map((_, index) => `exp-${index}`)}>
+                  {resumeJSON.experience.map((job, index) => (
+                    <ExperienceWithBullets
+                      key={`exp-${index}`}
+                      job={job}
+                      index={index}
+                      onUpdate={(updatedJob) => actions.updateExperience(index, updatedJob)}
+                      onDelete={() => actions.deleteExperience(index)}
+                      onToggleBullet={(bulletIndex, enabled) => actions.toggleExperienceBullet(index, bulletIndex, enabled)}
+                      onAddBullet={(bulletText) => actions.addExperienceBullet(index, bulletText)}
+                      onRemoveBullet={(bulletIndex) => actions.removeExperienceBullet(index, bulletIndex)}
+                      onUpdateBullet={(bulletIndex, newText) => actions.updateExperienceBullet(index, bulletIndex, newText)}
+                      onReorderBullets={(fromIndex, toIndex) => actions.reorderExperienceBullets(index, fromIndex, toIndex)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+
+            {/* Education */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Education</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => actions.addEducation({
+                    degree: '',
+                    institution: '',
+                    location: '',
+                    graduation_date: ''
+                  })}
+                >
+                  Add Education
+                </Button>
+              </div>
+              
+              <DndContext onDragEnd={handleEducationDragEnd}>
+                <SortableContext items={resumeJSON.education.map((_, index) => `edu-${index}`)}>
+                  {resumeJSON.education.map((edu, index) => (
+                    <EducationEditor
+                      key={`edu-${index}`}
+                      education={edu}
+                      index={index}
+                      onUpdate={(updatedEdu) => actions.updateEducation(index, updatedEdu)}
+                      onDelete={() => actions.deleteEducation(index)}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
+
+            {/* Technical Skills */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Technical Skills</h3>
+              <SkillsEditor
+                skills={resumeJSON.technical_skills}
+                onUpdate={(category, skills) => actions.updateSkills(category, skills)}
+              />
+            </div>
+
+            {/* Certifications */}
+            <div className="border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Certifications</h3>
+              <CertificationsEditor
+                certifications={resumeJSON.certifications || []}
+                onUpdate={(certs) => actions.updateCertifications(certs)}
+              />
+            </div>
+
+            {/* Volunteer */}
+            {(resumeJSON.volunteer?.title || resumeJSON.volunteer?.organization) && (
+              <div className="border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Volunteer Experience</h3>
+                <VolunteerEditor
+                  volunteer={resumeJSON.volunteer}
+                  onUpdate={(volunteer) => actions.updateVolunteer(volunteer)}
+                />
               </div>
             )}
-
-            {resumeJSON.technical_skills && Object.keys(resumeJSON.technical_skills).length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Technical Skills</h3>
-                {Object.entries(resumeJSON.technical_skills).map(([category, skills]) => (
-                  skills.length > 0 && (
-                    <div key={category} className="mb-3">
-                      <h4 className="font-medium text-gray-800 capitalize">
-                        {category.replace(/_/g, ' ')}
-                      </h4>
-                      <p className="text-sm text-gray-600">{skills.join(', ')}</p>
-                    </div>
-                  )
-                ))}
-              </div>
-            )}
-
-            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                <strong>Note:</strong> This is a simplified view of your parsed resume. 
-                The full editor with drag-and-drop functionality will be available in a future update.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -635,6 +793,813 @@ const ResumeEditor = () => {
               />
             ))}
          </DndContext>
+      </div>
+    </div>
+  );
+};
+
+// Experience Editor Component
+const ExperienceEditor = ({ job, index, onUpdate, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedJob, setEditedJob] = useState(job);
+
+  const handleSave = () => {
+    onUpdate(editedJob);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedJob(job);
+    setIsEditing(false);
+  };
+
+  const addResponsibility = () => {
+    setEditedJob({
+      ...editedJob,
+      responsibilities: [...editedJob.responsibilities, '']
+    });
+  };
+
+  const updateResponsibility = (index, value) => {
+    const newResponsibilities = [...editedJob.responsibilities];
+    newResponsibilities[index] = value;
+    setEditedJob({
+      ...editedJob,
+      responsibilities: newResponsibilities
+    });
+  };
+
+  const removeResponsibility = (index) => {
+    const newResponsibilities = editedJob.responsibilities.filter((_, i) => i !== index);
+    setEditedJob({
+      ...editedJob,
+      responsibilities: newResponsibilities
+    });
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-semibold text-gray-900">Experience #{index + 1}</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDelete}>
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+              <Input
+                value={editedJob.title}
+                onChange={(e) => setEditedJob({ ...editedJob, title: e.target.value })}
+                placeholder="Job Title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <Input
+                value={editedJob.company}
+                onChange={(e) => setEditedJob({ ...editedJob, company: e.target.value })}
+                placeholder="Company Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <Input
+                value={editedJob.location}
+                onChange={(e) => setEditedJob({ ...editedJob, location: e.target.value })}
+                placeholder="City, State"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dates</label>
+              <Input
+                value={editedJob.dates}
+                onChange={(e) => setEditedJob({ ...editedJob, dates: e.target.value })}
+                placeholder="MMM YYYY - MMM YYYY"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Responsibilities</label>
+              <Button variant="outline" size="sm" onClick={addResponsibility}>
+                Add Responsibility
+              </Button>
+            </div>
+            {editedJob.responsibilities.map((responsibility, respIndex) => (
+              <div key={respIndex} className="flex items-center space-x-2 mb-2">
+                <Textarea
+                  value={responsibility}
+                  onChange={(e) => updateResponsibility(respIndex, e.target.value)}
+                  placeholder="Describe your responsibility..."
+                  rows={2}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeResponsibility(respIndex)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h5 className="font-semibold text-gray-900">{job.title}</h5>
+              <p className="text-gray-600">{job.company} - {job.location}</p>
+            </div>
+            <span className="text-sm text-gray-500">{job.dates}</span>
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            {job.responsibilities.map((responsibility, respIndex) => (
+              <li key={respIndex} className="text-sm text-gray-700">{responsibility}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Education Editor Component
+const EducationEditor = ({ education, index, onUpdate, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedEducation, setEditedEducation] = useState(education);
+
+  const handleSave = () => {
+    onUpdate(editedEducation);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedEducation(education);
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-semibold text-gray-900">Education #{index + 1}</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDelete}>
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Degree</label>
+            <Input
+              value={editedEducation.degree}
+              onChange={(e) => setEditedEducation({ ...editedEducation, degree: e.target.value })}
+              placeholder="Degree Name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+            <Input
+              value={editedEducation.institution}
+              onChange={(e) => setEditedEducation({ ...editedEducation, institution: e.target.value })}
+              placeholder="University Name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <Input
+              value={editedEducation.location}
+              onChange={(e) => setEditedEducation({ ...editedEducation, location: e.target.value })}
+              placeholder="City, State"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Date</label>
+            <Input
+              value={editedEducation.graduation_date}
+              onChange={(e) => setEditedEducation({ ...editedEducation, graduation_date: e.target.value })}
+              placeholder="MMM YYYY"
+            />
+          </div>
+        </div>
+      ) : (
+        <div>
+          <h5 className="font-semibold text-gray-900">{education.degree}</h5>
+          <p className="text-gray-600">{education.institution} - {education.location}</p>
+          <p className="text-sm text-gray-500">{education.graduation_date}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Skills Editor Component
+const SkillsEditor = ({ skills, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedSkills, setEditedSkills] = useState(skills);
+
+  const handleSave = () => {
+    Object.keys(editedSkills).forEach(category => {
+      onUpdate(category, editedSkills[category]);
+    });
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedSkills(skills);
+    setIsEditing(false);
+  };
+
+  const updateSkillCategory = (category, newSkills) => {
+    setEditedSkills({
+      ...editedSkills,
+      [category]: newSkills
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="font-semibold text-gray-900">Technical Skills</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              Edit
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          {Object.entries(editedSkills).map(([category, skillList]) => (
+            <div key={category} className="border border-gray-200 rounded-lg p-4">
+              <h5 className="font-medium text-gray-800 mb-2 capitalize">
+                {category.replace(/_/g, ' ')}
+              </h5>
+              <Textarea
+                value={skillList.join(', ')}
+                onChange={(e) => updateSkillCategory(category, e.target.value.split(',').map(s => s.trim()).filter(s => s))}
+                placeholder="Enter skills separated by commas"
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {Object.entries(skills).map(([category, skillList]) => (
+            skillList.length > 0 && (
+              <div key={category}>
+                <h5 className="font-medium text-gray-800 capitalize">
+                  {category.replace(/_/g, ' ')}
+                </h5>
+                <p className="text-sm text-gray-600">{skillList.join(', ')}</p>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Certifications Editor Component
+const CertificationsEditor = ({ certifications, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedCerts, setEditedCerts] = useState(certifications.join(', '));
+
+  const handleSave = () => {
+    const certsArray = editedCerts.split(',').map(cert => cert.trim()).filter(cert => cert);
+    onUpdate(certsArray);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedCerts(certifications.join(', '));
+    setIsEditing(false);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="font-semibold text-gray-900">Certifications</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              Edit
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <Textarea
+          value={editedCerts}
+          onChange={(e) => setEditedCerts(e.target.value)}
+          placeholder="Enter certifications separated by commas"
+          rows={3}
+        />
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {certifications.map((cert, index) => (
+            <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+              {cert}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Volunteer Editor Component
+const VolunteerEditor = ({ volunteer, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedVolunteer, setEditedVolunteer] = useState(volunteer);
+
+  const handleSave = () => {
+    onUpdate(editedVolunteer);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedVolunteer(volunteer);
+    setIsEditing(false);
+  };
+
+  const addResponsibility = () => {
+    setEditedVolunteer({
+      ...editedVolunteer,
+      responsibilities: [...editedVolunteer.responsibilities, '']
+    });
+  };
+
+  const updateResponsibility = (index, value) => {
+    const newResponsibilities = [...editedVolunteer.responsibilities];
+    newResponsibilities[index] = value;
+    setEditedVolunteer({
+      ...editedVolunteer,
+      responsibilities: newResponsibilities
+    });
+  };
+
+  const removeResponsibility = (index) => {
+    const newResponsibilities = editedVolunteer.responsibilities.filter((_, i) => i !== index);
+    setEditedVolunteer({
+      ...editedVolunteer,
+      responsibilities: newResponsibilities
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="font-semibold text-gray-900">Volunteer Experience</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              Edit
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <Input
+                value={editedVolunteer.title}
+                onChange={(e) => setEditedVolunteer({ ...editedVolunteer, title: e.target.value })}
+                placeholder="Volunteer Title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+              <Input
+                value={editedVolunteer.organization}
+                onChange={(e) => setEditedVolunteer({ ...editedVolunteer, organization: e.target.value })}
+                placeholder="Organization Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dates</label>
+              <Input
+                value={editedVolunteer.dates}
+                onChange={(e) => setEditedVolunteer({ ...editedVolunteer, dates: e.target.value })}
+                placeholder="MMM YYYY - MMM YYYY"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Responsibilities</label>
+              <Button variant="outline" size="sm" onClick={addResponsibility}>
+                Add Responsibility
+              </Button>
+            </div>
+            {editedVolunteer.responsibilities.map((responsibility, respIndex) => (
+              <div key={respIndex} className="flex items-center space-x-2 mb-2">
+                <Textarea
+                  value={responsibility}
+                  onChange={(e) => updateResponsibility(respIndex, e.target.value)}
+                  placeholder="Describe your responsibility..."
+                  rows={2}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeResponsibility(respIndex)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h5 className="font-semibold text-gray-900">{volunteer.title}</h5>
+              <p className="text-gray-600">{volunteer.organization}</p>
+            </div>
+            <span className="text-sm text-gray-500">{volunteer.dates}</span>
+          </div>
+          <ul className="list-disc list-inside space-y-1">
+            {volunteer.responsibilities.map((responsibility, respIndex) => (
+              <li key={respIndex} className="text-sm text-gray-700">{responsibility}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Experience with Bullets Component
+const ExperienceWithBullets = ({ 
+  job, 
+  index, 
+  onUpdate, 
+  onDelete, 
+  onToggleBullet, 
+  onAddBullet, 
+  onRemoveBullet, 
+  onUpdateBullet, 
+  onReorderBullets 
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedJob, setEditedJob] = useState(job);
+  const [newBulletText, setNewBulletText] = useState('');
+
+  const handleSave = () => {
+    onUpdate(editedJob);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedJob(job);
+    setIsEditing(false);
+  };
+
+  const handleAddBullet = () => {
+    if (newBulletText.trim()) {
+      onAddBullet(newBulletText.trim());
+      setNewBulletText('');
+    }
+  };
+
+  const handleBulletDragEnd = (event) => {
+    const { active, over } = event;
+    if (active.id !== over.id) {
+      const oldIndex = parseInt(active.id.toString().split('-')[1]);
+      const newIndex = parseInt(over.id.toString().split('-')[1]);
+      onReorderBullets(oldIndex, newIndex);
+    }
+  };
+
+  // Normalize responsibilities to handle both string and object formats
+  const normalizeResponsibilities = (responsibilities) => {
+    if (!responsibilities) return [];
+    return responsibilities.map((resp, idx) => {
+      if (typeof resp === 'string') {
+        return {
+          text: resp,
+          enabled: true,
+          origin: 'original'
+        };
+      }
+      return {
+        text: resp.text || resp,
+        enabled: resp.enabled !== undefined ? resp.enabled : true,
+        origin: resp.origin || 'original',
+        category: resp.category
+      };
+    });
+  };
+
+  const normalizedResponsibilities = normalizeResponsibilities(job.responsibilities);
+
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-semibold text-gray-900">Experience #{index + 1}</h4>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDelete}>
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+              <Input
+                value={editedJob.title}
+                onChange={(e) => setEditedJob({ ...editedJob, title: e.target.value })}
+                placeholder="Job Title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+              <Input
+                value={editedJob.company}
+                onChange={(e) => setEditedJob({ ...editedJob, company: e.target.value })}
+                placeholder="Company Name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+              <Input
+                value={editedJob.location}
+                onChange={(e) => setEditedJob({ ...editedJob, location: e.target.value })}
+                placeholder="City, State"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dates</label>
+              <Input
+                value={editedJob.dates}
+                onChange={(e) => setEditedJob({ ...editedJob, dates: e.target.value })}
+                placeholder="MMM YYYY - MMM YYYY"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h5 className="font-semibold text-gray-900">{job.title}</h5>
+              <p className="text-gray-600">{job.company} - {job.location}</p>
+            </div>
+            <span className="text-sm text-gray-500">{job.dates}</span>
+          </div>
+          
+          {/* Bullet Management */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h6 className="font-medium text-gray-800">Responsibilities</h6>
+              <div className="flex items-center space-x-2">
+                <Input
+                  value={newBulletText}
+                  onChange={(e) => setNewBulletText(e.target.value)}
+                  placeholder="Add new bullet point..."
+                  className="w-64"
+                />
+                <Button variant="outline" size="sm" onClick={handleAddBullet}>
+                  Add
+                </Button>
+              </div>
+            </div>
+            
+            <DndContext onDragEnd={handleBulletDragEnd}>
+              <SortableContext items={normalizedResponsibilities.map((_, idx) => `bullet-${idx}`)}>
+                {normalizedResponsibilities.map((bullet, bulletIndex) => (
+                  <BulletItem
+                    key={`bullet-${bulletIndex}`}
+                    bullet={bullet}
+                    bulletIndex={bulletIndex}
+                    onToggle={(enabled) => onToggleBullet(bulletIndex, enabled)}
+                    onRemove={() => onRemoveBullet(bulletIndex)}
+                    onUpdate={(newText) => onUpdateBullet(bulletIndex, newText)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Bullet Item Component
+const BulletItem = ({ bullet, bulletIndex, onToggle, onRemove, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(bullet.text);
+
+  const handleSave = () => {
+    onUpdate(editedText);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedText(bullet.text);
+    setIsEditing(false);
+  };
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `bullet-${bulletIndex}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-start space-x-3 p-3 border rounded-lg ${
+        bullet.enabled ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200 opacity-60'
+      }`}
+    >
+      <div className="flex items-center space-x-2">
+        <ToggleSwitch
+          checked={bullet.enabled}
+          onChange={(checked) => onToggle(checked)}
+        />
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab text-gray-400 hover:text-gray-600"
+        >
+          ⋮⋮
+        </div>
+      </div>
+      
+      <div className="flex-1">
+        {isEditing ? (
+          <div className="space-y-2">
+            <Textarea
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              rows={2}
+              className="w-full"
+            />
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <p className={`text-sm ${bullet.enabled ? 'text-gray-700' : 'text-gray-500'}`}>
+              {bullet.text}
+            </p>
+            <div className="flex space-x-1 ml-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+                className="text-xs"
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRemove}
+                className="text-xs text-red-600 hover:text-red-700"
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Show origin and category badges */}
+        <div className="flex space-x-2 mt-2">
+          <span className={`px-2 py-1 text-xs rounded ${
+            bullet.origin === 'ai' 
+              ? 'bg-blue-100 text-blue-800' 
+              : bullet.origin === 'user'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-gray-100 text-gray-800'
+          }`}>
+            {bullet.origin === 'ai' ? 'AI Generated' : bullet.origin === 'user' ? 'User Added' : 'Original'}
+          </span>
+          {bullet.category && (
+            <span className="px-2 py-1 text-xs rounded bg-purple-100 text-purple-800">
+              {bullet.category}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

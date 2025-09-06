@@ -74,42 +74,68 @@ const SkillChecklist = () => {
       }
 
       console.log('Documents generated successfully:', data);
+      console.log('Data structure:', Object.keys(data));
+      console.log('Data.data structure:', data.data ? Object.keys(data.data) : 'data.data is undefined');
 
-             // Process the generated content
-       const { suggestedSkills, newBullets, coverLetter } = data.data;
+      // Process the generated content
+      const { suggestedSkills, newBullets, coverLetter } = data.data;
 
-       // Update suggested skills if new ones were provided
-       if (suggestedSkills && suggestedSkills.length > 0) {
-         actions.setSuggestedSkills(suggestedSkills);
-       }
+      // Update suggested skills if new ones were provided
+      if (suggestedSkills && suggestedSkills.length > 0) {
+        actions.setSuggestedSkills(suggestedSkills);
+      }
 
-       // Process new bullets - flatten all categories into a single array
-       const allNewBullets = newBullets.flatMap(category => 
-         category.bullets.map(bullet => {
-           const id = generateId();
-           console.log('Generated bullet ID:', id, 'for text:', bullet.substring(0, 50) + '...');
-           return {
-             id: id,
-             text: bullet,
-             category: category.category,
-             isEnabled: false // All generated bullets start as disabled
-           };
-         })
-       );
+      // Process new bullets - flatten all categories into a single array
+      let allNewBullets = [];
+      if (newBullets && Array.isArray(newBullets)) {
+        allNewBullets = newBullets.flatMap(category => 
+          category.bullets.map(bullet => {
+            const id = generateId();
+            console.log('Generated bullet ID:', id, 'for text:', bullet.substring(0, 50) + '...');
+            return {
+              id: id,
+              text: bullet,
+              category: category.category,
+              isEnabled: false // All generated bullets start as disabled
+            };
+          })
+        );
+      } else {
+        console.warn('newBullets is not an array or is undefined:', newBullets);
+      }
 
        // Extract original bullets from resume text
        const originalBullets = extractBulletPoints(state.originalResume);
 
        // Add AI bullets to the resume JSON structure
        if (allNewBullets.length > 0) {
-         // For new schema, we'll store AI bullets in a separate field for now
-         // This can be enhanced later to integrate with the experience section
-         console.log('AI bullets generated:', allNewBullets);
-         // TODO: Integrate AI bullets with the new schema structure
+         // Integrate AI bullets with the new schema experience section
+         const updatedResumeJSON = { ...state.resumeJSON };
+         
+         // Group AI bullets by category and add them to the first experience entry
+         if (updatedResumeJSON.experience && updatedResumeJSON.experience.length > 0) {
+           const firstJob = updatedResumeJSON.experience[0];
+           if (!firstJob.responsibilities) {
+             firstJob.responsibilities = [];
+           }
+           
+           // Add AI bullets to the first job
+           allNewBullets.forEach(aiBullet => {
+             firstJob.responsibilities.push({
+               text: aiBullet.text,
+               enabled: false, // AI bullets start as disabled
+               origin: 'ai',
+               category: aiBullet.category
+             });
+           });
+           
+           actions.setResumeJSON(updatedResumeJSON);
+           console.log('AI bullets integrated with experience section:', allNewBullets.length, 'bullets added');
+         }
        }
        
        actions.setGeneratedBullets(allNewBullets);
-       actions.setCoverLetter(coverLetter);
+       actions.setCoverLetter(coverLetter || '');
        actions.setCurrentStep('editor');
       
       toast.success('Documents generated successfully!');

@@ -205,9 +205,11 @@ export async function POST(request) {
     );
 
     console.log('API: AI generation completed successfully');
+    console.log('API: Generated content structure:', Object.keys(generatedContent));
 
     // Transform the new standardized schema back to the expected format
     const transformedContent = transformToLegacyFormat(generatedContent, selectedSkills);
+    console.log('API: Transformed content structure:', Object.keys(transformedContent));
 
     // Return the transformed content
     return NextResponse.json({

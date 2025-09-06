@@ -1,4 +1,5 @@
 
+import React from 'react';
 
 /**
  * Utility functions for the AI Resume Builder (patched)
@@ -687,13 +688,33 @@ export const convertResumeToPDF = async (resumeJSON) => {
     const timestamp = Date.now();
     console.log(`Generating PDF at ${timestamp} with updated template`);
     
-    // Validate resume data
-    if (!resumeJSON || !resumeJSON.sections) {
-      throw new Error('Invalid resume data: missing sections');
+    // Validate resume data - support both old and new schema formats
+    if (!resumeJSON) {
+      throw new Error('Invalid resume data: no resume data provided');
     }
     
+    // Check for new schema format (experience, education, etc.) or old schema format (sections)
+    const hasNewSchema = resumeJSON.experience || resumeJSON.education || resumeJSON.technical_skills;
+    const hasOldSchema = resumeJSON.sections;
+    
+    if (!hasNewSchema && !hasOldSchema) {
+      throw new Error('Invalid resume data: missing experience/education data or sections');
+    }
+    
+    // Validate resume data before passing to component
+    console.log('Resume data being passed to PDF template:', {
+      hasName: !!resumeJSON.name,
+      hasExperience: !!resumeJSON.experience,
+      hasSections: !!resumeJSON.sections,
+      experienceLength: resumeJSON.experience?.length || 0,
+      sectionsLength: resumeJSON.sections?.length || 0
+    });
+    
+    // Create a simple React element without complex props
+    const resumeElement = React.createElement(ResumeTemplate, { resume: resumeJSON });
+    
     // Add a key prop to force React to re-render the component
-    const blob = await pdf(<ResumeTemplate key={timestamp} resume={resumeJSON} />).toBlob();
+    const blob = await pdf(resumeElement).toBlob();
     console.log('PDF blob generated successfully, size:', blob.size);
     
     return blob;
@@ -734,20 +755,42 @@ export const downloadPDF = async (resumeJSON, filename = 'resume.pdf') => {
  * Get filtered JSON (only enabled bullets)
  */
 export const getFilteredJSON = (resumeJSON) => {
-  if (!resumeJSON || !resumeJSON.sections) {
+  if (!resumeJSON) {
     return resumeJSON;
   }
 
-  const filtered = {
-    ...resumeJSON,
-    sections: resumeJSON.sections.map(section => ({
-      ...section,
-      entries: section.entries.map(entry => ({
-        ...entry,
-        bullets: entry.bullets ? entry.bullets.filter(bullet => bullet.enabled) : []
+  // Handle new schema format
+  if (resumeJSON.experience) {
+    const filtered = {
+      ...resumeJSON,
+      experience: resumeJSON.experience.map(job => ({
+        ...job,
+        responsibilities: job.responsibilities ? job.responsibilities.filter(resp => {
+          // Handle both string and object formats
+          if (typeof resp === 'string') {
+            return true; // Keep all string format bullets (they're enabled by default)
+          }
+          return resp.enabled !== false; // Keep bullets that are not explicitly disabled
+        }) : []
       }))
-    }))
-  };
+    };
+    return filtered;
+  }
 
-  return filtered;
+  // Handle old schema format
+  if (resumeJSON.sections) {
+    const filtered = {
+      ...resumeJSON,
+      sections: resumeJSON.sections.map(section => ({
+        ...section,
+        entries: section.entries.map(entry => ({
+          ...entry,
+          bullets: entry.bullets ? entry.bullets.filter(bullet => bullet.enabled) : []
+        }))
+      }))
+    };
+    return filtered;
+  }
+
+  return resumeJSON;
 };
