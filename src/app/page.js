@@ -19,7 +19,7 @@ function PasswordProtection({ onPasswordCorrect }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // For testing purposes - you can change this password
-  const CORRECT_PASSWORD = 'iloveyash';
+  const CORRECT_PASSWORD = 'a';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

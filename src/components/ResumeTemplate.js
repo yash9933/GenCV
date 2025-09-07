@@ -12,10 +12,10 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 36, // 0.5 inch top margin (reduced from 1 inch)
-    paddingBottom: 36, // 0.5 inch bottom margin (reduced from 1 inch)
-    paddingLeft: 36, // 0.5 inch left margin
-    paddingRight: 36, // 0.5 inch right margin
+    paddingTop: 24, // Reduced from 36pt
+    paddingBottom: 24, // Reduced from 36pt
+    paddingLeft: 30, // Reduced from 36pt
+    paddingRight: 30, // Reduced from 36pt
     fontSize: 10,
     fontFamily: 'Helvetica',
     lineHeight: 1.0, // Single-spaced
@@ -23,12 +23,12 @@ const styles = StyleSheet.create({
   },
   header: {
     textAlign: 'center',
-    marginBottom: 12
+    marginBottom: 8 // Reduced from 12pt
   },
   name: {
-    fontSize: 22,
+    fontSize: 20, // Reduced from 22pt
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 14, // Reduced from 15pt
     color: '#000'
   },
   contact: {
@@ -37,55 +37,36 @@ const styles = StyleSheet.create({
     lineHeight: 1.2
   },
   section: {
-    marginBottom: 14
+    marginBottom: 10 // Reduced from 14pt
   },
   sectionTitleWithRule: {
     fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 3,
+    marginBottom: 2, // Reduced from 3pt
     textTransform: 'uppercase',
     textAlign: 'center',
     color: '#000'
   },
   sectionRule: {
     borderBottom: '0.5pt solid #000',
-    marginBottom: 6
-  },
-  entry: {
-    marginBottom: 10
-  },
-  entryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 3
+    marginBottom: 4 // Reduced from 6pt
   },
   entryLeft: {
     flex: 1
   },
-  entryTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 1
-  },
-  entrySub: {
-    fontSize: 9,
-    color: '#000'
-  },
-  entryDate: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#000',
-    textAlign: 'right'
-  },
   bullets: {
     marginLeft: 10,
-    marginTop: 3
+    marginTop: 2 // Reduced from 3pt
   },
   bullet: {
     fontSize: 9,
-    marginBottom: 2,
+    marginBottom: 1, // Reduced from 2pt
+    color: '#000',
+    lineHeight: 1.2
+  },
+  bulletPoint: {
+    fontSize: 9,
+    marginBottom: 1,
     color: '#000',
     lineHeight: 1.2
   },
@@ -112,70 +93,50 @@ const styles = StyleSheet.create({
     lineHeight: 1.3,
     color: '#000'
   },
-  jobEntry: {
-    marginBottom: 10
+  // Generic entry styles for all sections (experience, education, volunteer)
+  entry: {
+    marginBottom: 8
   },
-  jobHeader: {
+  entryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 3
   },
-  jobTitle: {
+  entryTitle: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 1
   },
-  jobCompany: {
+  entrySubtitle: {
     fontSize: 9,
     color: '#000'
   },
-  jobLocation: {
-    fontSize: 9,
-    color: '#000'
-  },
-  jobDates: {
+  entryDate: {
     fontSize: 9,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'right'
   },
-  educationEntry: {
-    marginBottom: 8
-  },
-  degree: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 1
-  },
-  institution: {
-    fontSize: 9,
-    color: '#000'
-  },
-  educationLocation: {
-    fontSize: 9,
-    color: '#000'
-  },
-  graduationDate: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#000'
-  },
   skillCategory: {
-    marginBottom: 4
+    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'flex-start'
   },
   skillCategoryTitle: {
     fontSize: 9,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 2
+    marginRight: 12,
+    width: 150
   },
   skills: {
     fontSize: 9,
     color: '#000',
-    lineHeight: 1.2
+    lineHeight: 1.2,
+    flex: 1,
+    textAlign: 'left'
   }
 });
 
@@ -207,6 +168,11 @@ export const ResumeTemplate = ({ resume }) => {
       </Document>
     );
   }
+
+  // Helper function to get section title style
+  const getSectionTitleStyle = (title) => {
+    return styles.sectionTitleWithRule;
+  };
 
   // Helper function to safely render contact info
   const renderContactInfo = () => {
@@ -281,12 +247,15 @@ export const ResumeTemplate = ({ resume }) => {
             <Text style={styles.sectionTitleWithRule}>PROFESSIONAL EXPERIENCE</Text>
             <View style={styles.sectionRule} />
             {resume.experience.map((job, index) => (
-              <View key={index} style={styles.jobEntry}>
-                <View style={styles.jobHeader}>
-                  <Text style={styles.jobTitle}>{job.title}</Text>
-                  <Text style={styles.jobCompany}>{job.company}</Text>
-                  <Text style={styles.jobLocation}>{job.location}</Text>
-                  <Text style={styles.jobDates}>{job.dates}</Text>
+              <View key={index} style={styles.entry}>
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryLeft}>
+                    <Text style={styles.entryTitle}>{job.title}</Text>
+                    <Text style={styles.entrySubtitle}>
+                      {job.company}{job.location ? ` — ${job.location}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.entryDate}>{job.dates}</Text>
                 </View>
                 {job.responsibilities && job.responsibilities.length > 0 && (
                   <View style={styles.bullets}>
@@ -304,11 +273,16 @@ export const ResumeTemplate = ({ resume }) => {
             <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
             <View style={styles.sectionRule} />
             {resume.education.map((edu, index) => (
-              <View key={index} style={styles.educationEntry}>
-                <Text style={styles.degree}>{edu.degree}</Text>
-                <Text style={styles.institution}>{edu.institution}</Text>
-                <Text style={styles.educationLocation}>{edu.location}</Text>
-                <Text style={styles.graduationDate}>{edu.graduation_date}</Text>
+              <View key={index} style={styles.entry}>
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryLeft}>
+                    <Text style={styles.entryTitle}>{edu.degree}</Text>
+                    <Text style={styles.entrySubtitle}>
+                      {edu.institution}{edu.location ? ` — ${edu.location}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.entryDate}>{edu.graduation_date}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -323,7 +297,7 @@ export const ResumeTemplate = ({ resume }) => {
               skills.length > 0 && (
                 <View key={category} style={styles.skillCategory}>
                   <Text style={styles.skillCategoryTitle}>
-                    {category.replace(/_/g, ' ').toUpperCase()}
+                    {category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
                   <Text style={styles.skills}>
                     {skills.join(', ')}
@@ -339,11 +313,13 @@ export const ResumeTemplate = ({ resume }) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>VOLUNTEER</Text>
             <View style={styles.sectionRule} />
-            <View style={styles.jobEntry}>
-              <View style={styles.jobHeader}>
-                <Text style={styles.jobTitle}>{resume.volunteer.title}</Text>
-                <Text style={styles.jobCompany}>{resume.volunteer.organization}</Text>
-                <Text style={styles.jobDates}>{resume.volunteer.dates}</Text>
+            <View style={styles.entry}>
+              <View style={styles.entryHeader}>
+                <View style={styles.entryLeft}>
+                  <Text style={styles.entryTitle}>{resume.volunteer.title}</Text>
+                  <Text style={styles.entrySubtitle}>{resume.volunteer.organization}</Text>
+                </View>
+                <Text style={styles.entryDate}>{resume.volunteer.dates}</Text>
               </View>
               {resume.volunteer.responsibilities && resume.volunteer.responsibilities.length > 0 && (
                 <View style={styles.bullets}>
