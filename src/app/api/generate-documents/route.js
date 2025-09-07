@@ -2,110 +2,6 @@ import { NextResponse } from 'next/server';
 import AIClientFactory from '../../../lib/ai/index';
 
 /**
- * Transform the AI response back to the legacy format expected by the frontend
- * @param {Object} aiResponse - The AI response (either new schema or GPT format)
- * @param {Array} selectedSkills - The skills selected by the user
- * @returns {Object} - Transformed content in legacy format
- */
-function transformToLegacyFormat(aiResponse, selectedSkills) {
-  // Check if this is the new standardized schema (from Gemini)
-  if (aiResponse.name && (aiResponse.experience || aiResponse.work_experience)) {
-    return transformNewSchemaToLegacy(aiResponse, selectedSkills);
-  }
-  
-  // Check if this is the GPT format
-  if (aiResponse.bullets && aiResponse.coverLetter) {
-    return transformGPTFormatToLegacy(aiResponse, selectedSkills);
-  }
-  
-  // Fallback: assume it's already in legacy format
-  return aiResponse;
-}
-
-/**
- * Transform the new standardized schema to legacy format
- */
-function transformNewSchemaToLegacy(newSchema, selectedSkills) {
-  // Extract suggested skills from the new schema
-  const suggestedSkills = [];
-  
-  // Add selected skills as suggested skills
-  suggestedSkills.push(...selectedSkills);
-  
-  // Add skills from the new schema
-  if (newSchema.technical_skills) {
-    Object.values(newSchema.technical_skills).forEach(skillArray => {
-      if (Array.isArray(skillArray)) {
-        suggestedSkills.push(...skillArray);
-      }
-    });
-  }
-  
-  // Remove duplicates
-  const uniqueSuggestedSkills = [...new Set(suggestedSkills)];
-
-  // Transform work experience and projects into newBullets format
-  const newBullets = [];
-  
-  // Add work experience bullets (handle both old and new formats)
-  const experienceData = newSchema.experience || newSchema.work_experience;
-  if (experienceData && Array.isArray(experienceData)) {
-    const workExperienceBullets = experienceData.flatMap(job => {
-      const achievements = job.achievements || job.responsibilities || [];
-      return achievements.map(achievement => ({
-        text: achievement,
-        category: 'Professional Experience'
-      }));
-    });
-    
-    if (workExperienceBullets.length > 0) {
-      newBullets.push({
-        category: 'Professional Experience',
-        bullets: workExperienceBullets.map(bullet => bullet.text)
-      });
-    }
-  }
-  
-  // Add project bullets
-  if (newSchema.projects && Array.isArray(newSchema.projects)) {
-    const projectBullets = newSchema.projects.flatMap(project => 
-      project.achievements ? project.achievements.map(achievement => ({
-        text: achievement,
-        category: 'Projects'
-      })) : []
-    );
-    
-    if (projectBullets.length > 0) {
-      newBullets.push({
-        category: 'Projects',
-        bullets: projectBullets.map(bullet => bullet.text)
-      });
-    }
-  }
-  
-  // Generate a cover letter from the summary and work experience
-  let coverLetter = '';
-  if (newSchema.summary) {
-    coverLetter += newSchema.summary + '\n\n';
-  }
-  
-  if (experienceData && experienceData.length > 0) {
-    const latestJob = experienceData[0];
-    const jobTitle = latestJob.job_title || latestJob.title || 'professional';
-    const company = latestJob.company || 'various organizations';
-    coverLetter += `With my experience as a ${jobTitle} at ${company}, I am excited about the opportunity to contribute to your team. `;
-  }
-  
-  coverLetter += 'I am confident that my skills and experience make me a strong candidate for this position.';
-
-  return {
-    suggestedSkills: uniqueSuggestedSkills,
-    newBullets: newBullets,
-    coverLetter: coverLetter
-  };
-}
-
-/**
  * Transform the GPT format to legacy format
  */
 function transformGPTFormatToLegacy(gptResponse, selectedSkills) {
@@ -147,11 +43,11 @@ function transformGPTFormatToLegacy(gptResponse, selectedSkills) {
 
 /**
  * POST /api/generate-documents
- * Generates resume bullets and cover letter using AI
+ * Generates AI bullets and cover letter based on job description and selected skills
  */
 export async function POST(request) {
   try {
-    console.log('API: Starting combined resume parsing and document generation request...');
+    console.log('API: Starting AI bullet generation request...');
     
     // Parse request body
     const body = await request.json();
@@ -175,6 +71,7 @@ export async function POST(request) {
     }
 
     console.log('API: Input validation passed');
+    console.log('API: Selected skills:', selectedSkills);
 
     // Initialize AI client factory
     console.log('API: Initializing AI client factory...');
@@ -192,56 +89,49 @@ export async function POST(request) {
     // Choose AI provider - prefer GPT if available, otherwise use Gemini
     let aiProvider = availableProviders.includes('gpt') ? 'gpt' : 'gemini';
     
-    console.log(`API: Using ${aiProvider.toUpperCase()} AI provider`);
+    console.log(`API: Using ${aiProvider.toUpperCase()} AI provider for bullet generation`);
 
-    // Step 1: Parse resume text into structured JSON
-    console.log('API: Step 1 - Parsing resume text into structured JSON...');
-    const parsedResume = await aiFactory.generateResumeContent(
-      aiProvider,
-      {
-        jobDescription: jobDescription || '',
-        resumeText,
-        selectedSkills: [] // Empty for initial parsing
-      }
-    );
-
-    console.log('API: Resume parsing completed successfully');
-    console.log('API: Parsed resume structure:', Object.keys(parsedResume));
-
-    // Step 2: Generate enhanced content (bullets and cover letter)
-    console.log('API: Step 2 - Generating enhanced content...');
-    const generatedContent = await aiFactory.generateResumeContent(
-      aiProvider,
-      {
-        jobDescription,
-        resumeText,
-        selectedSkills
-      }
-    );
+    // Generate enhanced content (bullets and cover letter)
+    console.log('API: Generating AI bullets and cover letter...');
+    console.log('API: Calling generateBulletPoints with provider:', aiProvider);
+    console.log('API: Parameters:', { jobDescription: jobDescription?.length, resumeText: resumeText?.length, selectedSkills });
+    
+    let generatedContent;
+    try {
+      generatedContent = await aiFactory.generateBulletPoints(
+        aiProvider,
+        {
+          jobDescription,
+          resumeText,
+          selectedSkills
+        }
+      );
+      console.log('API: generateBulletPoints completed successfully');
+    } catch (bulletError) {
+      console.error('API: Error in generateBulletPoints:', bulletError);
+      throw new Error(`Bullet generation failed: ${bulletError.message}`);
+    }
 
     console.log('API: Content generation completed successfully');
     console.log('API: Generated content structure:', Object.keys(generatedContent));
 
-    // Transform the new standardized schema back to the expected format
-    const transformedContent = transformToLegacyFormat(generatedContent, selectedSkills);
+    // Transform the generated content to the expected format
+    const transformedContent = transformGPTFormatToLegacy(generatedContent, selectedSkills);
     console.log('API: Transformed content structure:', Object.keys(transformedContent));
 
-    // Return both parsed resume and generated content
+    // Return generated content
     return NextResponse.json({
       success: true,
-      data: {
-        ...transformedContent,
-        parsedResume: parsedResume // Include the parsed resume for the frontend
-      }
+      data: transformedContent
     });
 
   } catch (error) {
-    console.error('API: Error in combined parsing and generation:', error);
+    console.error('API: Error in bullet generation:', error);
     
     // Return appropriate error response
     return NextResponse.json(
       { 
-        error: 'Failed to parse resume and generate documents',
+        error: 'Failed to generate AI bullets and cover letter',
         details: error.message 
       },
       { status: 500 }

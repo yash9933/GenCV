@@ -41,7 +41,92 @@ const SkillChecklist = () => {
   };
 
   /**
-   * Handle generate documents
+   * Handle extract skills and continue (Step 1)
+   */
+  const handleExtractSkills = async () => {
+    console.log('=== STARTING EXTRACT SKILLS ===');
+    console.log('Function called successfully!');
+    console.log('Current state:', {
+      jobDescription: state.jobDescription,
+      originalResume: state.originalResume,
+      hasJobDescription: !!state.jobDescription,
+      hasResumeText: !!state.originalResume,
+      resumeTextLength: state.originalResume?.length || 0
+    });
+    
+    actions.setGenerating(true);
+    actions.setError(null);
+
+    try {
+      console.log('Extracting skills from resume and job description...');
+      console.log('Making API call to /api/parse-resume...');
+      
+      const requestBody = {
+        jobDescription: state.jobDescription,
+        resumeText: state.originalResume,
+      };
+      
+      console.log('Request body:', requestBody);
+      
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('API response status:', response.status);
+      console.log('API response ok:', response.ok);
+
+      const data = await response.json();
+      console.log('Raw API response data:', data);
+
+      if (!response.ok) {
+        console.error('API call failed:', data);
+        throw new Error(data.error || 'Failed to parse resume and extract skills');
+      }
+
+      console.log('Resume parsed and skills extracted successfully:', data);
+      console.log('Full API response:', JSON.stringify(data, null, 2));
+
+      // Process the parsed resume and extracted skills
+      const { parsedResume, suggestedSkills } = data.data;
+      console.log('Extracted parsedResume:', parsedResume);
+      console.log('Extracted suggestedSkills:', suggestedSkills);
+      console.log('parsedResume type:', typeof parsedResume);
+      console.log('parsedResume keys:', parsedResume ? Object.keys(parsedResume) : 'null/undefined');
+
+      // Store the parsed resume JSON
+      if (parsedResume) {
+        console.log('Setting parsed resume JSON:', parsedResume);
+        actions.setResumeJSON(parsedResume);
+        console.log('Resume JSON set successfully');
+      } else {
+        console.error('No parsedResume found in API response');
+        console.error('data.data structure:', data.data);
+      }
+
+      // Set suggested skills (all unchecked by default)
+      if (suggestedSkills && suggestedSkills.length > 0) {
+        console.log('Setting suggested skills:', suggestedSkills);
+        actions.setSuggestedSkills(suggestedSkills);
+        actions.setSelectedSkills([]); // All unchecked by default
+      }
+
+      toast.success('Resume parsed and skills extracted successfully!');
+
+    } catch (error) {
+      console.error('Error parsing resume:', error);
+      actions.setError(error.message);
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      actions.setGenerating(false);
+    }
+  };
+
+  /**
+   * Handle generate documents (Step 2)
    */
   const handleGenerateDocuments = async () => {
     if (state.selectedSkills.length === 0) {
@@ -54,6 +139,11 @@ const SkillChecklist = () => {
 
     try {
       console.log('Generating documents with selected skills:', state.selectedSkills);
+      console.log('Request data:', {
+        jobDescription: state.jobDescription?.length,
+        resumeText: state.originalResume?.length,
+        selectedSkills: state.selectedSkills
+      });
       
       const response = await fetch('/api/generate-documents', {
         method: 'POST',
@@ -66,6 +156,9 @@ const SkillChecklist = () => {
           selectedSkills: state.selectedSkills,
         }),
       });
+      
+      console.log('API response status:', response.status);
+      console.log('API response ok:', response.ok);
 
       const data = await response.json();
 
@@ -78,12 +171,7 @@ const SkillChecklist = () => {
       console.log('Data.data structure:', data.data ? Object.keys(data.data) : 'data.data is undefined');
 
       // Process the generated content
-      const { suggestedSkills, newBullets, coverLetter, parsedResume } = data.data;
-
-      // Update suggested skills if new ones were provided
-      if (suggestedSkills && suggestedSkills.length > 0) {
-        actions.setSuggestedSkills(suggestedSkills);
-      }
+      const { newBullets, coverLetter } = data.data;
 
       // Process new bullets - flatten all categories into a single array
       let allNewBullets = [];
@@ -104,18 +192,8 @@ const SkillChecklist = () => {
         console.warn('newBullets is not an array or is undefined:', newBullets);
       }
 
-       // Extract original bullets from resume text
-       const originalBullets = extractBulletPoints(state.originalResume);
-
-       // Start with the parsed resume or current resume JSON
-       let updatedResumeJSON = parsedResume ? { ...parsedResume } : { ...state.resumeJSON };
-       
-       // Store the parsed resume JSON first
-       if (parsedResume) {
-         console.log('Setting parsed resume JSON:', parsedResume);
-         actions.setResumeJSON(parsedResume);
-         updatedResumeJSON = { ...parsedResume };
-       }
+       // Use the current resume JSON (already parsed in step 1)
+       const updatedResumeJSON = { ...state.resumeJSON };
 
        // Add AI bullets to the resume JSON structure
        if (allNewBullets.length > 0) {
@@ -163,7 +241,7 @@ const SkillChecklist = () => {
        actions.setCoverLetter(coverLetter || '');
        actions.setCurrentStep('editor');
       
-      toast.success('Resume parsed and documents generated successfully!');
+      toast.success('AI bullets generated successfully!');
 
     } catch (error) {
       console.error('Error generating documents:', error);
@@ -184,37 +262,85 @@ const SkillChecklist = () => {
     actions.setSelectedSkills([]);
   };
 
+  // Check if we have parsed resume data (step 1 completed)
+  const hasParsedResume = state.resumeJSON && (
+    (state.resumeJSON.experience && state.resumeJSON.experience.length > 0) || 
+    (state.resumeJSON.name && state.resumeJSON.name.trim() !== '') ||
+    (state.resumeJSON.summary && state.resumeJSON.summary.trim() !== '')
+  );
+  
+  console.log('hasParsedResume check:', {
+    hasResumeJSON: !!state.resumeJSON,
+    experienceLength: state.resumeJSON?.experience?.length || 0,
+    hasName: !!(state.resumeJSON?.name && state.resumeJSON.name.trim() !== ''),
+    hasSummary: !!(state.resumeJSON?.summary && state.resumeJSON.summary.trim() !== ''),
+    hasParsedResume: hasParsedResume
+  });
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            Select Skills to Highlight
+            {hasParsedResume ? 'Select Skills to Highlight' : 'Extract Skills & Continue'}
           </h2>
+          <p className="text-gray-600 mt-2">
+            {hasParsedResume 
+              ? 'We\'ve identified the following skills from your resume and job description. Select the ones you want to highlight:'
+              : 'Click the button below to parse your resume and extract relevant skills from the job description.'
+            }
+          </p>
         </div>
 
-        <div className="mb-6">
-          <p className="text-gray-600 mb-4">
-            We've identified the following skills from the job description. 
-            Select the ones you want to highlight in your resume:
-          </p>
-          
-          {state.suggestedSkills.length === 0 ? (
-            <p className="text-gray-500 italic">No skills found in the job description.</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {state.suggestedSkills.map((skill) => (
-                <div key={skill} className="flex items-center">
-                  <Checkbox
-                    checked={state.selectedSkills.includes(skill)}
-                    onChange={() => handleSkillToggle(skill)}
-                    label={skill}
-                  />
-                </div>
-              ))}
+        {!hasParsedResume ? (
+          // Step 1: Extract Skills
+          <div className="mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                Step 1: Parse Resume & Extract Skills
+              </h3>
+              <p className="text-blue-700 mb-4">
+                We'll analyze your resume and the job description to identify relevant skills and technologies.
+              </p>
+              <Button
+                variant="primary"
+                onClick={handleExtractSkills}
+                disabled={state.isGenerating}
+                className="px-8"
+              >
+                {state.isGenerating ? 'Extracting Skills...' : 'Extract Skills & Continue'}
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          // Step 2: Select Skills
+          <div className="mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <h3 className="text-lg font-semibold text-green-900 mb-2">
+                Step 2: Select Skills for AI Generation
+              </h3>
+              <p className="text-green-700">
+                Choose which skills you want AI to generate enhanced bullet points for.
+              </p>
+            </div>
+            
+            {state.suggestedSkills.length === 0 ? (
+              <p className="text-gray-500 italic">No skills found in the job description.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {state.suggestedSkills.map((skill) => (
+                  <div key={skill} className="flex items-center">
+                    <Checkbox
+                      checked={state.selectedSkills.includes(skill)}
+                      onChange={() => handleSkillToggle(skill)}
+                      label={skill}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* TEMPORARY: JSON Debugging Section */}
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
@@ -244,7 +370,11 @@ const SkillChecklist = () => {
 
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            {state.selectedSkills.length} of {state.suggestedSkills.length} skills selected
+            {hasParsedResume ? (
+              `${state.selectedSkills.length} of ${state.suggestedSkills.length} skills selected`
+            ) : (
+              'Ready to extract skills from your resume'
+            )}
           </div>
           
           <div className="space-x-4">
@@ -256,13 +386,15 @@ const SkillChecklist = () => {
               Back
             </Button>
             
-            <Button
-              variant="primary"
-              onClick={handleGenerateDocuments}
-              disabled={state.selectedSkills.length === 0 || state.isGenerating}
-            >
-              {state.isGenerating ? 'Generating...' : 'Generate Documents'}
-            </Button>
+            {hasParsedResume && (
+              <Button
+                variant="primary"
+                onClick={handleGenerateDocuments}
+                disabled={state.selectedSkills.length === 0 || state.isGenerating}
+              >
+                {state.isGenerating ? 'Generating AI Bullets...' : 'Generate AI Bullets'}
+              </Button>
+            )}
           </div>
         </div>
 

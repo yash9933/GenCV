@@ -391,24 +391,50 @@ const ResumeEditor = () => {
       return;
     }
 
-    // Handle bullet reordering
-    // Find the bullet in the JSON structure
-    for (let sectionIndex = 0; sectionIndex < resumeJSON.sections.length; sectionIndex++) {
-      const section = resumeJSON.sections[sectionIndex];
-      for (let entryIndex = 0; entryIndex < section.entries.length; entryIndex++) {
-        const entry = section.entries[entryIndex];
+    // Handle bullet reordering for new schema (experience-based)
+    if (resumeJSON.experience && resumeJSON.experience.length > 0) {
+      for (let experienceIndex = 0; experienceIndex < resumeJSON.experience.length; experienceIndex++) {
+        const experience = resumeJSON.experience[experienceIndex];
         
-        // Check if entry has bullets property and it's an array
-        if (!entry.bullets || !Array.isArray(entry.bullets)) {
+        // Check if experience has responsibilities property and it's an array
+        if (!experience.responsibilities || !Array.isArray(experience.responsibilities)) {
           continue;
         }
         
-        const bulletIndex = entry.bullets.findIndex(b => b.id === active.id);
-        const overBulletIndex = entry.bullets.findIndex(b => b.id === over.id);
+        const bulletIndex = experience.responsibilities.findIndex(b => b.id === active.id);
+        const overBulletIndex = experience.responsibilities.findIndex(b => b.id === over.id);
         
         if (bulletIndex !== -1 && overBulletIndex !== -1) {
-          actions.reorderBullets(sectionIndex, entryIndex, bulletIndex, overBulletIndex);
+          // Reorder bullets within the same experience entry
+          const [movedBullet] = experience.responsibilities.splice(bulletIndex, 1);
+          experience.responsibilities.splice(overBulletIndex, 0, movedBullet);
+          
+          // Update the resume JSON
+          actions.setResumeJSON({ ...resumeJSON });
           return;
+        }
+      }
+    }
+    
+    // Handle bullet reordering for old schema (sections-based)
+    if (resumeJSON.sections && resumeJSON.sections.length > 0) {
+      for (let sectionIndex = 0; sectionIndex < resumeJSON.sections.length; sectionIndex++) {
+        const section = resumeJSON.sections[sectionIndex];
+        for (let entryIndex = 0; entryIndex < section.entries.length; entryIndex++) {
+          const entry = section.entries[entryIndex];
+          
+          // Check if entry has bullets property and it's an array
+          if (!entry.bullets || !Array.isArray(entry.bullets)) {
+            continue;
+          }
+          
+          const bulletIndex = entry.bullets.findIndex(b => b.id === active.id);
+          const overBulletIndex = entry.bullets.findIndex(b => b.id === over.id);
+          
+          if (bulletIndex !== -1 && overBulletIndex !== -1) {
+            actions.reorderBullets(sectionIndex, entryIndex, bulletIndex, overBulletIndex);
+            return;
+          }
         }
       }
     }
@@ -480,7 +506,12 @@ const ResumeEditor = () => {
     }
   };
 
-  if (!resumeJSON || ((!resumeJSON.sections || resumeJSON.sections.length === 0) && (!resumeJSON.experience || resumeJSON.experience.length === 0))) {
+  // Check if we have any meaningful resume data (either old schema with sections or new schema with experience/education)
+  const hasOldSchema = resumeJSON?.sections && resumeJSON.sections.length > 0;
+  const hasNewSchema = resumeJSON?.experience || resumeJSON?.education || resumeJSON?.technical_skills;
+  const hasBasicInfo = resumeJSON?.name;
+  
+  if (!resumeJSON || (!hasOldSchema && !hasNewSchema && !hasBasicInfo)) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white rounded-lg shadow-lg p-8">
@@ -687,6 +718,7 @@ const ResumeEditor = () => {
                  localStorage.clear();
                  sessionStorage.clear();
                  actions.clearStorage();
+                 actions.setCurrentStep('input');
                  toast.success('All data cleared. Starting fresh!');
                }}
              >
@@ -699,7 +731,7 @@ const ResumeEditor = () => {
                 onClick={async () => {
                   try {
                     setIsGeneratingPDF(true);
-                    const name = resumeJSON.metadata?.name || 'resume';
+                    const name = resumeJSON.name || 'resume';
                     const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
                     await downloadPDF(resumeJSON, filename);
                     toast.success('PDF file downloaded successfully!');
@@ -723,10 +755,10 @@ const ResumeEditor = () => {
             <div>
               <label className="block text-sm font-medium text-blue-800 mb-1">Name</label>
               <Input
-                value={resumeJSON.metadata.name}
+                value={resumeJSON.name || ''}
                 onChange={(e) => {
                   const updated = { ...resumeJSON };
-                  updated.metadata.name = e.target.value;
+                  updated.name = e.target.value;
                   actions.setResumeJSON(updated);
                 }}
                 placeholder="Your full name"
@@ -735,10 +767,11 @@ const ResumeEditor = () => {
             <div>
               <label className="block text-sm font-medium text-blue-800 mb-1">Email</label>
               <Input
-                value={resumeJSON.metadata.contact.email}
+                value={resumeJSON.contact?.email || ''}
                 onChange={(e) => {
                   const updated = { ...resumeJSON };
-                  updated.metadata.contact.email = e.target.value;
+                  if (!updated.contact) updated.contact = {};
+                  updated.contact.email = e.target.value;
                   actions.setResumeJSON(updated);
                 }}
                 placeholder="your.email@example.com"
@@ -747,10 +780,11 @@ const ResumeEditor = () => {
             <div>
               <label className="block text-sm font-medium text-blue-800 mb-1">Phone</label>
               <Input
-                value={resumeJSON.metadata.contact.phone}
+                value={resumeJSON.contact?.phone || ''}
                 onChange={(e) => {
                   const updated = { ...resumeJSON };
-                  updated.metadata.contact.phone = e.target.value;
+                  if (!updated.contact) updated.contact = {};
+                  updated.contact.phone = e.target.value;
                   actions.setResumeJSON(updated);
                 }}
                 placeholder="(123) 456-7890"
@@ -759,13 +793,14 @@ const ResumeEditor = () => {
             <div>
               <label className="block text-sm font-medium text-blue-800 mb-1">Links</label>
               <Input
-                value={resumeJSON.metadata.contact.links.join(', ')}
+                value={resumeJSON.contact?.linkedin || ''}
                 onChange={(e) => {
                   const updated = { ...resumeJSON };
-                  updated.metadata.contact.links = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                  if (!updated.contact) updated.contact = {};
+                  updated.contact.linkedin = e.target.value;
                   actions.setResumeJSON(updated);
                 }}
-                placeholder="LinkedIn, GitHub"
+                placeholder="LinkedIn URL"
               />
             </div>
           </div>
@@ -778,7 +813,7 @@ const ResumeEditor = () => {
            onDragStart={handleDragStart}
            onDragEnd={handleDragEnd}
          >
-                       {resumeJSON.sections.map((section, sectionIndex) => (
+                       {resumeJSON.sections && resumeJSON.sections.length > 0 ? resumeJSON.sections.map((section, sectionIndex) => (
               <Section
                 key={`section-${sectionIndex}`}
                 section={section}
@@ -789,7 +824,11 @@ const ResumeEditor = () => {
                 onEditSkill={actions.editSkill}
                 onReorderSkills={actions.reorderSkills}
               />
-            ))}
+            )) : (
+              <div className="text-center text-gray-500 py-8">
+                <p>No resume sections found. Please check if the resume was parsed correctly.</p>
+              </div>
+            )}
          </DndContext>
       </div>
     </div>

@@ -24,15 +24,24 @@ class GeminiClient {
     try {
       console.log('Sending request to Gemini API...');
       console.log('Using model:', this.model.modelName);
+      console.log('Prompt length:', prompt.length);
+      console.log('Prompt preview:', prompt.substring(0, 300) + '...');
 
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
 
       console.log('Gemini API response received successfully');
+      console.log('Response length:', text.length);
+      console.log('Response preview:', text.substring(0, 300) + '...');
       return text;
     } catch (error) {
       console.error('Gemini API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        code: error.code
+      });
 
       // If model not found, try alternative models
       if (error.message.includes('not found') || error.message.includes('404')) {
@@ -113,6 +122,96 @@ class GeminiClient {
       console.error('Error in generateResumeContent:', error);
       throw error;
     }
+  }
+
+  /**
+   * Generate bullet points for specific skills
+   * @param {Object} params - Parameters for bullet generation
+   * @param {string} params.jobDescription - Job description
+   * @param {string} params.resumeText - Original resume text
+   * @param {string[]} params.selectedSkills - Selected skills to generate bullets for
+   * @returns {Promise<Object>} - Generated bullet points and cover letter
+   */
+  async generateBulletPoints({ jobDescription, resumeText, selectedSkills }) {
+    const prompt = this.buildBulletPrompt({ jobDescription, resumeText, selectedSkills });
+
+    try {
+      const response = await this.generateContent(prompt);
+
+      // Parse the JSON response
+      let parsedResponse;
+      try {
+        console.log('Raw Gemini bullet response:', response);
+        parsedResponse = JSON.parse(response);
+      } catch (parseError) {
+        console.error('Failed to parse Gemini bullet response as JSON:', parseError);
+        
+        // Try to clean the response and parse again
+        try {
+          const cleanedResponse = response.trim();
+          const jsonStart = cleanedResponse.indexOf('{');
+          const jsonEnd = cleanedResponse.lastIndexOf('}') + 1;
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            const jsonOnly = cleanedResponse.substring(jsonStart, jsonEnd);
+            console.log('Attempting to parse cleaned bullet JSON:', jsonOnly);
+            parsedResponse = JSON.parse(jsonOnly);
+          } else {
+            throw new Error('No JSON object found in bullet response');
+          }
+        } catch (cleanError) {
+          console.error('Failed to clean and parse bullet response:', cleanError);
+          throw new Error('Invalid JSON response from Gemini API for bullet generation. Please try again.');
+        }
+      }
+
+      return parsedResponse;
+    } catch (error) {
+      console.error('Error in generateBulletPoints:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build the prompt for bullet generation
+   * @param {Object} params - Parameters for prompt building
+   * @returns {string} - Formatted prompt
+   */
+  buildBulletPrompt({ jobDescription, resumeText, selectedSkills }) {
+    return `You are an expert resume writer and career coach. Based on the job description and resume text provided, generate 3-5 compelling bullet points for each selected skill that would be relevant for this position.
+
+JOB DESCRIPTION:
+${jobDescription}
+
+RESUME TEXT:
+${resumeText}
+
+SELECTED SKILLS TO GENERATE BULLETS FOR:
+${selectedSkills.join(', ')}
+
+Generate bullet points that:
+1. Are specific and quantifiable when possible
+2. Use strong action verbs
+3. Highlight relevant achievements from the resume
+4. Match the job requirements
+5. Are ATS-friendly
+6. Are NEW and ENHANCED versions of existing content, not just reordered
+
+Format the response as a JSON object with this structure:
+{
+  "bullets": [
+    {
+      "skill": "skill_name",
+      "bullets": [
+        "bullet point 1",
+        "bullet point 2",
+        "bullet point 3"
+      ]
+    }
+  ],
+  "coverLetter": "A compelling cover letter paragraph that ties the candidate's experience to the job requirements"
+}
+
+Ensure the JSON is valid and properly formatted. Generate NEW content, not just reordered existing content.`;
   }
 
   /**

@@ -59,6 +59,24 @@ class AIClientFactory {
     const client = this.getClient(provider);
     return await client.generateResumeContent(params);
   }
+
+  /**
+   * Generate bullet points using specified provider
+   * @param {string} provider - 'gemini' or 'gpt'
+   * @param {Object} params - Generation parameters
+   * @returns {Promise<Object>} - Generated bullet points
+   */
+  async generateBulletPoints(provider = 'gemini', params) {
+    const client = this.getClient(provider);
+    
+    // Check if the client has the generateBulletPoints method
+    if (typeof client.generateBulletPoints === 'function') {
+      return await client.generateBulletPoints(params);
+    } else {
+      // Fallback to generateResumeContent for clients that don't have the new method
+      return await client.generateResumeContent(params);
+    }
+  }
 }
 
 export default AIClientFactory;
