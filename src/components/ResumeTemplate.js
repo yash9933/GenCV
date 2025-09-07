@@ -267,27 +267,6 @@ export const ResumeTemplate = ({ resume }) => {
           </View>
         )}
 
-        {/* Education Section */}
-        {resume.education && resume.education.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
-            <View style={styles.sectionRule} />
-            {resume.education.map((edu, index) => (
-              <View key={index} style={styles.entry}>
-                <View style={styles.entryHeader}>
-                  <View style={styles.entryLeft}>
-                    <Text style={styles.entryTitle}>{edu.degree}</Text>
-                    <Text style={styles.entrySubtitle}>
-                      {edu.institution}{edu.location ? ` — ${edu.location}` : ''}
-                    </Text>
-                  </View>
-                  <Text style={styles.entryDate}>{edu.graduation_date}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
         {/* Technical Skills Section */}
         {resume.technical_skills && Object.keys(resume.technical_skills).length > 0 && (
           <View style={styles.section}>
@@ -331,6 +310,27 @@ export const ResumeTemplate = ({ resume }) => {
                 </View>
               )}
             </View>
+          </View>
+        )}
+
+        {/* Education Section */}
+        {resume.education && resume.education.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
+            <View style={styles.sectionRule} />
+            {resume.education.map((edu, index) => (
+              <View key={index} style={styles.entry}>
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryLeft}>
+                    <Text style={styles.entryTitle}>{edu.degree}</Text>
+                    <Text style={styles.entrySubtitle}>
+                      {edu.institution}{edu.location ? ` — ${edu.location}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.entryDate}>{edu.graduation_date}</Text>
+                </View>
+              </View>
+            ))}
           </View>
         )}
 
