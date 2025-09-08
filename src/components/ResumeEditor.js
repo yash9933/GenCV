@@ -1497,12 +1497,7 @@ const ExperienceWithBullets = ({
     });
   };
 
-  const addTechStack = () => {
-    setEditedJob({
-      ...editedJob,
-      tech_stack: [...(editedJob.tech_stack || []), '']
-    });
-  };
+  // Simplified: tech stack is edited as a single comma-separated text box
 
   const handleBulletDragEnd = (event) => {
     const { active, over } = event;
@@ -1636,36 +1631,19 @@ const ExperienceWithBullets = ({
           
           {/* Tech Stack Section */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Tech Stack</label>
-              <Button variant="outline" size="sm" onClick={addTechStack}>
-                Add Technology
-              </Button>
-            </div>
-            {(editedJob.tech_stack || []).map((tech, techIndex) => (
-              <div key={techIndex} className="flex items-center space-x-2 mb-2">
-                <Input
-                  value={tech}
-                  onChange={(e) => {
-                    const newTechStack = [...(editedJob.tech_stack || [])];
-                    newTechStack[techIndex] = e.target.value;
-                    setEditedJob({ ...editedJob, tech_stack: newTechStack });
-                  }}
-                  placeholder="Technology"
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const newTechStack = (editedJob.tech_stack || []).filter((_, i) => i !== techIndex);
-                    setEditedJob({ ...editedJob, tech_stack: newTechStack });
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-            ))}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tech Stack</label>
+            <Textarea
+              value={(editedJob.tech_stack || []).join(', ')}
+              onChange={(e) => {
+                const parsed = e.target.value
+                  .split(/[,;\n]/)
+                  .map(s => s.trim())
+                  .filter(Boolean);
+                setEditedJob({ ...editedJob, tech_stack: parsed });
+              }}
+              placeholder="Comma-separated technologies (e.g., React, Node.js, AWS)"
+              rows={2}
+            />
           </div>
         </div>
       ) : (
@@ -1854,29 +1832,7 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
     setIsEditing(false);
   };
 
-  const addTechnology = () => {
-    setEditedProject({
-      ...editedProject,
-      technologies: [...editedProject.technologies, '']
-    });
-  };
-
-  const updateTechnology = (techIndex, value) => {
-    const newTechnologies = [...editedProject.technologies];
-    newTechnologies[techIndex] = value;
-    setEditedProject({
-      ...editedProject,
-      technologies: newTechnologies
-    });
-  };
-
-  const removeTechnology = (techIndex) => {
-    const newTechnologies = editedProject.technologies.filter((_, i) => i !== techIndex);
-    setEditedProject({
-      ...editedProject,
-      technologies: newTechnologies
-    });
-  };
+  // Simplified: technologies edited as a single comma-separated text box
 
   const addBullet = () => {
     setEditedProject({
@@ -1984,29 +1940,19 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
           </div>
           
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">Technologies</label>
-              <Button variant="outline" size="sm" onClick={addTechnology}>
-                Add Technology
-              </Button>
-            </div>
-            {editedProject.technologies.map((tech, techIndex) => (
-              <div key={techIndex} className="flex items-center space-x-2 mb-2">
-                <Input
-                  value={tech}
-                  onChange={(e) => updateTechnology(techIndex, e.target.value)}
-                  placeholder="Technology"
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeTechnology(techIndex)}
-                >
-                  Remove
-                </Button>
-              </div>
-            ))}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Technologies</label>
+            <Textarea
+              value={(editedProject.technologies || []).join(', ')}
+              onChange={(e) => {
+                const parsed = e.target.value
+                  .split(/[,;\n]/)
+                  .map(s => s.trim())
+                  .filter(Boolean);
+                setEditedProject({ ...editedProject, technologies: parsed });
+              }}
+              placeholder="Comma-separated technologies (e.g., React, Node.js, AWS)"
+              rows={2}
+            />
           </div>
           
           <div>

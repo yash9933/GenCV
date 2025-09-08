@@ -87,11 +87,13 @@ const styles = StyleSheet.create({
   summary: {
     fontSize: 10,
     lineHeight: 1.3,
-    color: '#000'
+    color: '#000',
+    marginBottom: 4
   },
   // Generic entry styles for all sections (experience, education, volunteer)
   entry: {
-    marginBottom: 4
+    marginBottom: 4,
+    marginTop: 2
   },
   entryHeader: {
     flexDirection: 'row',
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
   techStack: {
     flexDirection: 'row',
     marginTop: 4,
-    marginBottom: 4
+    marginBottom: 2
   },
   techStackLabel: {
     fontSize: 10,
