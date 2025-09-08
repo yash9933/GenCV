@@ -1,23 +1,14 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Link } from '@react-pdf/renderer';
-
-// Fonts
-Font.register({
-  family: 'Helvetica',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyC0IT4ttDfA.ttf', fontWeight: 'normal' },
-    { src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyC0IT4ttDfB.ttf', fontWeight: 'bold' }
-  ]
-});
+import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 20, // Further reduced for more space
-    paddingBottom: 20, // Further reduced for more space
-    paddingLeft: 30,
-    paddingRight: 30,
-    fontSize: 10,
-    fontFamily: 'Helvetica',
+    paddingTop: 28,
+    paddingBottom: 28,
+    paddingLeft: 44,
+    paddingRight: 44,
+    fontSize: 11,
+    fontFamily: 'Times-Roman',
     lineHeight: 1.0,
     color: '#000'
   },
@@ -26,26 +17,26 @@ const styles = StyleSheet.create({
     marginBottom: 6 // Further reduced
   },
   name: {
-    fontSize: 18, // Further reduced
+    fontSize: 19, // Further reduced
     fontWeight: 'bold',
     marginBottom: 10, // Further reduced
     color: '#000'
   },
   contact: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#000',
     lineHeight: 1.2
   },
   contactLink: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#0066cc',
     textDecoration: 'underline'
   },
   section: {
-    marginBottom: 8 // Further reduced
+    marginBottom: 6
   },
   sectionTitleWithRule: {
-    fontSize: 10, // Reduced
+    fontSize: 11, // Reduced
     fontWeight: 'bold',
     marginBottom: 1, // Further reduced
     textTransform: 'uppercase',
@@ -54,53 +45,53 @@ const styles = StyleSheet.create({
   },
   sectionRule: {
     borderBottom: '0.5pt solid #000',
-    marginBottom: 3 // Further reduced
+    marginBottom: 2
   },
   entryLeft: {
     flex: 1
   },
   bullets: {
     marginLeft: 10,
-    marginTop: 1 // Further reduced
+    marginTop: 1
   },
   bullet: {
-    fontSize: 9,
-    marginBottom: 0.5, // Further reduced
+    fontSize: 10,
+    marginBottom: 0.3,
     color: '#000',
-    lineHeight: 1.1 // Tighter line height
+    lineHeight: 1.1
   },
   bulletPoint: {
-    fontSize: 9,
-    marginBottom: 0.5, // Further reduced
+    fontSize: 10,
+    marginBottom: 0.3,
     color: '#000',
-    lineHeight: 1.1 // Tighter line height
+    lineHeight: 1.1
   },
   techStack: {
-    fontSize: 8,
+    fontSize: 9,
     // fontStyle: 'italic',
     marginTop: 3,
     color: '#000'
   },
   skillsGroup: {
-    marginBottom: 4
+    marginBottom: 3
   },
   skillCategory: {
     fontWeight: 'bold',
-    fontSize: 9,
+    fontSize: 10,
     color: '#000'
   },
   skillList: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#000'
   },
   summary: {
-    fontSize: 9,
+    fontSize: 10,
     lineHeight: 1.3,
     color: '#000'
   },
   // Generic entry styles for all sections (experience, education, volunteer)
   entry: {
-    marginBottom: 6 // Reduced
+    marginBottom: 4
   },
   entryHeader: {
     flexDirection: 'row',
@@ -109,35 +100,35 @@ const styles = StyleSheet.create({
     marginBottom: 3
   },
   entryTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 1
   },
   entrySubtitle: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#000'
   },
   entryDate: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'right'
   },
   skillCategory: {
-    marginBottom: 2, // Reduced
+    marginBottom: 1,
     flexDirection: 'row',
     alignItems: 'flex-start'
   },
   skillCategoryTitle: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#000',
-    marginRight: 12,
-    width: 150
+    marginRight: 10,
+    width: 130
   },
   skills: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#000',
     lineHeight: 1.2,
     flex: 1,
@@ -145,16 +136,16 @@ const styles = StyleSheet.create({
   },
   techStack: {
     flexDirection: 'row',
-    marginTop: 2,
-    marginBottom: 2
+    marginTop: 4,
+    marginBottom: 4
   },
   techStackLabel: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#000'
   },
   techStackList: {
-    fontSize: 9,
+    fontSize: 10,
     color: '#000',
     flex: 1
   }

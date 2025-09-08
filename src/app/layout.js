@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
+import ResetOnReload from './ResetOnReload'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,6 +14,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <ResetOnReload />
         {children}
         <Toaster 
           position="top-right"

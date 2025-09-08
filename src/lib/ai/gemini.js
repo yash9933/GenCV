@@ -342,13 +342,31 @@ RULES:
 1. Always return ONLY JSON, no markdown, no explanations.
 2. Dates must be in "MMM YYYY" with UPPERCASE months (JAN, FEB, MAR...).
 3. If a field is missing, output "" or [] (not null).
-4. Map every skill into the correct technical_skills bucket:
-   - Jira, Asana, MS Project → project_program_management
-   - SQL, Power BI, SharePoint → data_reporting_tools
-   - Test plans, QA → testing_quality_assurance
-   - Communication tools (Slack, Teams) → collaboration_communication
-   - Java, Python, etc. → programming_languages
-5. Do NOT create "Other Skills".
+4. STRICT SKILL HEADERS: Only use the following keys in technical_skills and NEVER invent new ones. If you find skills that don't clearly fit, choose the closest bucket below and DO NOT add an "other" key.
+   Allowed keys (exactly these snake_case keys):
+   - programming_languages
+   - frontend_technologies
+   - backend_technologies
+   - database_management
+   - project_program_management
+   - business_analysis_documentation
+   - data_reporting_tools
+   - collaboration_communication
+   - testing_quality_assurance
+   - tools_methodologies
+   - version_control_cloud
+   Mapping guidance and examples:
+   • Jira, Asana, MS Project → project_program_management
+   • Requirements gathering, Process mapping, Documentation → business_analysis_documentation
+   • SQL, Power BI, SharePoint → data_reporting_tools
+   • Slack, Microsoft Teams → collaboration_communication
+   • Test plans, QA, UAT → testing_quality_assurance
+   • Git, GitHub, GitLab, AWS, Azure, GCP → version_control_cloud
+   • Agile, Scrum, Kanban → tools_methodologies
+   • Java, Python, JavaScript → programming_languages
+   • React, Vue, Angular, Tailwind → frontend_technologies
+   • Node.js, Django, Spring → backend_technologies
+5. Do NOT create any extra headers like "other", "misc", or custom categories. Only the allowed keys above.
 6. Flatten all bullets into "responsibilities" arrays for experience and volunteer sections.
 7. Extract tech stack from experience entries:
    - Look for "Tech Stack:" lines after bullet points in each experience entry

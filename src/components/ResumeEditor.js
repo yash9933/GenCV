@@ -503,8 +503,12 @@ const ResumeEditor = () => {
         throw new Error('No resume data available for PDF generation');
       }
       
-      const name = resumeJSON.name || 'resume';
-      const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+      const baseName = (resumeJSON.name || 'Resume')
+        .toString()
+        .trim()
+        .replace(/[\\\/:*?"<>|]+/g, '') // remove illegal filename chars
+        .replace(/\s+/g, ' '); // keep spaces
+      const filename = `${baseName}.pdf`;
       await downloadPDF(resumeJSON, filename);
       toast.success('PDF file downloaded successfully!');
     } catch (error) {
@@ -541,6 +545,27 @@ const ResumeEditor = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Resume Editor</h2>
             <div className="flex space-x-4">
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  try {
+                    // Clear web storage
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    // Clear Cache Storage
+                    if (window.caches && caches.keys) {
+                      const keys = await caches.keys();
+                      await Promise.all(keys.map((key) => caches.delete(key)));
+                    }
+                  } catch (_) {}
+                  // Reset app state and go to input
+                  actions.clearStorage();
+                  actions.setCurrentStep('input');
+                  toast.success('Starting a new application');
+                }}
+              >
+                Start New
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => actions.setCurrentStep('skills')}
@@ -792,8 +817,12 @@ const ResumeEditor = () => {
                 onClick={async () => {
                   try {
                     setIsGeneratingPDF(true);
-                    const name = resumeJSON.name || 'resume';
-                    const filename = `${name.replace(/\s+/g, '_').toLowerCase()}.pdf`;
+                    const baseName = (resumeJSON.name || 'Resume')
+                      .toString()
+                      .trim()
+                      .replace(/[\\\/:*?"<>|]+/g, '')
+                      .replace(/\s+/g, ' ');
+                    const filename = `${baseName}.pdf`;
                     await downloadPDF(resumeJSON, filename);
                     toast.success('PDF file downloaded successfully!');
                   } catch (error) {
