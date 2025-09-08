@@ -464,7 +464,7 @@ const ResumeEditor = () => {
   // Drag and drop handlers for new schema
   const handleExperienceDragEnd = (event) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = parseInt(active.id.toString().split('-')[1]);
       const newIndex = parseInt(over.id.toString().split('-')[1]);
       actions.reorderExperience(oldIndex, newIndex);
@@ -473,10 +473,19 @@ const ResumeEditor = () => {
 
   const handleEducationDragEnd = (event) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = parseInt(active.id.toString().split('-')[1]);
       const newIndex = parseInt(over.id.toString().split('-')[1]);
       actions.reorderEducation(oldIndex, newIndex);
+    }
+  };
+
+  const handleProjectsDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = parseInt(active.id.toString().split('-')[1]);
+      const newIndex = parseInt(over.id.toString().split('-')[1]);
+      actions.reorderProjects(oldIndex, newIndex);
     }
   };
 
@@ -606,13 +615,14 @@ const ResumeEditor = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => actions.addExperience({
-                    title: '',
-                    company: '',
-                    location: '',
-                    dates: '',
-                    responsibilities: []
-                  })}
+                    onClick={() => actions.addExperience({
+                      title: '',
+                      company: '',
+                      location: '',
+                      dates: '',
+                      responsibilities: [],
+                      tech_stack: []
+                    })}
                 >
                   Add Experience
                 </Button>
@@ -677,6 +687,40 @@ const ResumeEditor = () => {
                 onUpdate={(category, skills) => actions.updateSkills(category, skills)}
               />
             </div>
+
+            {/* Projects */}
+            {resumeJSON.projects && resumeJSON.projects.length > 0 && (
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800">Projects</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => actions.addProject({
+                      name: '',
+                      technologies: [],
+                      bullets: []
+                    })}
+                  >
+                    Add Project
+                  </Button>
+                </div>
+                
+                <DndContext onDragEnd={handleProjectsDragEnd}>
+                  <SortableContext items={resumeJSON.projects.map((_, index) => `proj-${index}`)}>
+                    {resumeJSON.projects.map((project, index) => (
+                      <ProjectEditor
+                        key={`proj-${index}`}
+                        project={project}
+                        index={index}
+                        onUpdate={(updatedProject) => actions.updateProject(index, updatedProject)}
+                        onDelete={() => actions.deleteProject(index)}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
+            )}
 
             {/* Certifications */}
             <div className="border border-gray-200 rounded-lg p-6">
@@ -991,7 +1035,16 @@ const EducationEditor = ({ education, index, onUpdate, onDelete }) => {
   const [editedEducation, setEditedEducation] = useState(education);
 
   const handleSave = () => {
-    onUpdate(editedEducation);
+    // Filter out empty fields on save
+    const filteredEducation = {
+      ...editedEducation,
+      degree: editedEducation.degree?.trim() || '',
+      institution: editedEducation.institution?.trim() || '',
+      graduation_date: editedEducation.graduation_date?.trim() || '',
+      location: editedEducation.location?.trim() || '',
+      gpa: editedEducation.gpa?.trim() || ''
+    };
+    onUpdate(filteredEducation);
     setIsEditing(false);
   };
 
@@ -1080,7 +1133,11 @@ const SkillsEditor = ({ skills, onUpdate }) => {
 
   const handleSave = () => {
     Object.keys(editedSkills).forEach(category => {
-      onUpdate(category, editedSkills[category]);
+      // Filter out empty skills on save
+      const filteredSkills = Array.isArray(editedSkills[category]) 
+        ? editedSkills[category].filter(skill => skill.trim() !== '')
+        : editedSkills[category];
+      onUpdate(category, filteredSkills);
     });
     setIsEditing(false);
   };
@@ -1137,16 +1194,17 @@ const SkillsEditor = ({ skills, onUpdate }) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {Object.entries(skills).map(([category, skillList]) => (
-            skillList.length > 0 && (
+          {Object.entries(skills).map(([category, skillList]) => {
+            const filteredSkills = Array.isArray(skillList) ? skillList.filter(skill => skill.trim() !== '') : [];
+            return filteredSkills.length > 0 && (
               <div key={category}>
                 <h5 className="font-medium text-gray-800 capitalize">
                   {category.replace(/_/g, ' ')}
                 </h5>
-                <p className="text-sm text-gray-600">{skillList.join(', ')}</p>
+                <p className="text-sm text-gray-600">{filteredSkills.join(', ')}</p>
               </div>
-            )
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -1362,7 +1420,22 @@ const ExperienceWithBullets = ({
   const [editedJob, setEditedJob] = useState(job);
 
   const handleSave = () => {
-    onUpdate(editedJob);
+    // Filter out empty responsibilities and tech stack on save
+    const filteredJob = {
+      ...editedJob,
+      title: editedJob.title?.trim() || '',
+      company: editedJob.company?.trim() || '',
+      dates: editedJob.dates?.trim() || '',
+      location: editedJob.location?.trim() || '',
+      responsibilities: (editedJob.responsibilities || []).filter(resp => {
+        if (typeof resp === 'string') {
+          return resp.trim() !== '';
+        }
+        return resp.text && resp.text.trim() !== '';
+      }),
+      tech_stack: (editedJob.tech_stack || []).filter(tech => tech.trim() !== '')
+    };
+    onUpdate(filteredJob);
     setIsEditing(false);
   };
 
@@ -1371,10 +1444,23 @@ const ExperienceWithBullets = ({
     setIsEditing(false);
   };
 
+  const addResponsibility = () => {
+    setEditedJob({
+      ...editedJob,
+      responsibilities: [...(editedJob.responsibilities || []), '']
+    });
+  };
+
+  const addTechStack = () => {
+    setEditedJob({
+      ...editedJob,
+      tech_stack: [...(editedJob.tech_stack || []), '']
+    });
+  };
 
   const handleBulletDragEnd = (event) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = parseInt(active.id.toString().split('-')[1]);
       const newIndex = parseInt(over.id.toString().split('-')[1]);
       onReorderBullets(oldIndex, newIndex);
@@ -1466,6 +1552,75 @@ const ExperienceWithBullets = ({
               />
             </div>
           </div>
+          
+          {/* Responsibilities Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Responsibilities</label>
+              <Button variant="outline" size="sm" onClick={addResponsibility}>
+                Add Responsibility
+              </Button>
+            </div>
+            {editedJob.responsibilities.map((responsibility, respIndex) => (
+              <div key={respIndex} className="flex items-center space-x-2 mb-2">
+                <Textarea
+                  value={responsibility}
+                  onChange={(e) => {
+                    const newResponsibilities = [...editedJob.responsibilities];
+                    newResponsibilities[respIndex] = e.target.value;
+                    setEditedJob({ ...editedJob, responsibilities: newResponsibilities });
+                  }}
+                  placeholder="Responsibility description..."
+                  rows={2}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newResponsibilities = editedJob.responsibilities.filter((_, i) => i !== respIndex);
+                    setEditedJob({ ...editedJob, responsibilities: newResponsibilities });
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+          
+          {/* Tech Stack Section */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Tech Stack</label>
+              <Button variant="outline" size="sm" onClick={addTechStack}>
+                Add Technology
+              </Button>
+            </div>
+            {(editedJob.tech_stack || []).map((tech, techIndex) => (
+              <div key={techIndex} className="flex items-center space-x-2 mb-2">
+                <Input
+                  value={tech}
+                  onChange={(e) => {
+                    const newTechStack = [...(editedJob.tech_stack || [])];
+                    newTechStack[techIndex] = e.target.value;
+                    setEditedJob({ ...editedJob, tech_stack: newTechStack });
+                  }}
+                  placeholder="Technology"
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newTechStack = (editedJob.tech_stack || []).filter((_, i) => i !== techIndex);
+                    setEditedJob({ ...editedJob, tech_stack: newTechStack });
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div>
@@ -1497,6 +1652,23 @@ const ExperienceWithBullets = ({
               </SortableContext>
             </DndContext>
           </div>
+          
+          {/* Tech Stack Display */}
+          {job.tech_stack && job.tech_stack.filter(tech => tech.trim() !== '').length > 0 && (
+            <div className="mt-3">
+              <div className="text-sm text-gray-600 mb-1">Tech Stack:</div>
+              <div className="flex flex-wrap gap-1">
+                {job.tech_stack.filter(tech => tech.trim() !== '').map((tech, techIndex) => (
+                  <span
+                    key={techIndex}
+                    className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1609,6 +1781,228 @@ const BulletItem = ({ bullet, bulletIndex, onToggle, onUpdate }) => {
           )}
         </div>
       </div>
+    </div>
+  );
+};
+
+// Project Editor Component
+const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProject, setEditedProject] = useState(project);
+
+  const handleSave = () => {
+    // Filter out empty values on save
+    const filteredProject = {
+      ...editedProject,
+      name: editedProject.name?.trim() || '',
+      technologies: (editedProject.technologies || []).filter(tech => tech.trim() !== ''),
+      bullets: (editedProject.bullets || []).filter(bullet => bullet.trim() !== '')
+    };
+    onUpdate(filteredProject);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditedProject(project);
+    setIsEditing(false);
+  };
+
+  const addTechnology = () => {
+    setEditedProject({
+      ...editedProject,
+      technologies: [...editedProject.technologies, '']
+    });
+  };
+
+  const updateTechnology = (techIndex, value) => {
+    const newTechnologies = [...editedProject.technologies];
+    newTechnologies[techIndex] = value;
+    setEditedProject({
+      ...editedProject,
+      technologies: newTechnologies
+    });
+  };
+
+  const removeTechnology = (techIndex) => {
+    const newTechnologies = editedProject.technologies.filter((_, i) => i !== techIndex);
+    setEditedProject({
+      ...editedProject,
+      technologies: newTechnologies
+    });
+  };
+
+  const addBullet = () => {
+    setEditedProject({
+      ...editedProject,
+      bullets: [...(editedProject.bullets || []), '']
+    });
+  };
+
+  const updateBullet = (bulletIndex, value) => {
+    const newBullets = [...(editedProject.bullets || [])];
+    newBullets[bulletIndex] = value;
+    setEditedProject({
+      ...editedProject,
+      bullets: newBullets
+    });
+  };
+
+  const removeBullet = (bulletIndex) => {
+    const newBullets = (editedProject.bullets || []).filter((_, i) => i !== bulletIndex);
+    setEditedProject({
+      ...editedProject,
+      bullets: newBullets
+    });
+  };
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: `proj-${index}`,
+    transition: {
+      duration: 150,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="border border-gray-200 rounded-lg p-4 mb-4"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-move text-gray-400 hover:text-gray-600"
+          >
+            ⋮⋮
+          </div>
+          <h4 className="font-semibold text-gray-900">Project #{index + 1}</h4>
+        </div>
+        <div className="flex space-x-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleSave}>
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDelete}>
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+            <Input
+              value={editedProject.name}
+              onChange={(e) => setEditedProject({ ...editedProject, name: e.target.value })}
+              placeholder="Project Name"
+            />
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Technologies</label>
+              <Button variant="outline" size="sm" onClick={addTechnology}>
+                Add Technology
+              </Button>
+            </div>
+            {editedProject.technologies.map((tech, techIndex) => (
+              <div key={techIndex} className="flex items-center space-x-2 mb-2">
+                <Input
+                  value={tech}
+                  onChange={(e) => updateTechnology(techIndex, e.target.value)}
+                  placeholder="Technology"
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeTechnology(techIndex)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+          
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">Bullet Points</label>
+              <Button variant="outline" size="sm" onClick={addBullet}>
+                Add Bullet
+              </Button>
+            </div>
+            {(editedProject.bullets || []).map((bullet, bulletIndex) => (
+              <div key={bulletIndex} className="flex items-center space-x-2 mb-2">
+                <Textarea
+                  value={bullet}
+                  onChange={(e) => updateBullet(bulletIndex, e.target.value)}
+                  placeholder="Bullet point description..."
+                  rows={2}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeBullet(bulletIndex)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="mb-2">
+            <span className="font-semibold text-gray-900">{project.name}</span>
+            {project.technologies && project.technologies.filter(tech => tech.trim() !== '').length > 0 && (
+              <span className="font-normal text-gray-600">
+                {' | Tech Stack: '}
+                {project.technologies.filter(tech => tech.trim() !== '').join(', ')}
+              </span>
+            )}
+          </div>
+          {project.bullets && project.bullets.length > 0 && (
+            <div>
+              <div className="text-sm text-gray-600 mb-1">Key Points:</div>
+              <ul className="list-disc list-inside space-y-1">
+                {project.bullets.map((bullet, bulletIndex) => (
+                  <li key={bulletIndex} className="text-sm text-gray-700">{bullet}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

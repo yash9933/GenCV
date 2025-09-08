@@ -12,23 +12,23 @@ Font.register({
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 24, // Reduced from 36pt
-    paddingBottom: 24, // Reduced from 36pt
-    paddingLeft: 30, // Reduced from 36pt
-    paddingRight: 30, // Reduced from 36pt
+    paddingTop: 20, // Further reduced for more space
+    paddingBottom: 20, // Further reduced for more space
+    paddingLeft: 30,
+    paddingRight: 30,
     fontSize: 10,
     fontFamily: 'Helvetica',
-    lineHeight: 1.0, // Single-spaced
+    lineHeight: 1.0,
     color: '#000'
   },
   header: {
     textAlign: 'center',
-    marginBottom: 8 // Reduced from 12pt
+    marginBottom: 6 // Further reduced
   },
   name: {
-    fontSize: 20, // Reduced from 22pt
+    fontSize: 18, // Further reduced
     fontWeight: 'bold',
-    marginBottom: 14, // Reduced from 15pt
+    marginBottom: 10, // Further reduced
     color: '#000'
   },
   contact: {
@@ -37,38 +37,38 @@ const styles = StyleSheet.create({
     lineHeight: 1.2
   },
   section: {
-    marginBottom: 10 // Reduced from 14pt
+    marginBottom: 8 // Further reduced
   },
   sectionTitleWithRule: {
-    fontSize: 11,
+    fontSize: 10, // Reduced
     fontWeight: 'bold',
-    marginBottom: 2, // Reduced from 3pt
+    marginBottom: 1, // Further reduced
     textTransform: 'uppercase',
     textAlign: 'center',
     color: '#000'
   },
   sectionRule: {
     borderBottom: '0.5pt solid #000',
-    marginBottom: 4 // Reduced from 6pt
+    marginBottom: 3 // Further reduced
   },
   entryLeft: {
     flex: 1
   },
   bullets: {
     marginLeft: 10,
-    marginTop: 2 // Reduced from 3pt
+    marginTop: 1 // Further reduced
   },
   bullet: {
     fontSize: 9,
-    marginBottom: 1, // Reduced from 2pt
+    marginBottom: 0.5, // Further reduced
     color: '#000',
-    lineHeight: 1.2
+    lineHeight: 1.1 // Tighter line height
   },
   bulletPoint: {
     fontSize: 9,
-    marginBottom: 1,
+    marginBottom: 0.5, // Further reduced
     color: '#000',
-    lineHeight: 1.2
+    lineHeight: 1.1 // Tighter line height
   },
   techStack: {
     fontSize: 8,
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   // Generic entry styles for all sections (experience, education, volunteer)
   entry: {
-    marginBottom: 8
+    marginBottom: 6 // Reduced
   },
   entryHeader: {
     flexDirection: 'row',
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     textAlign: 'right'
   },
   skillCategory: {
-    marginBottom: 4,
+    marginBottom: 2, // Reduced
     flexDirection: 'row',
     alignItems: 'flex-start'
   },
@@ -137,6 +137,21 @@ const styles = StyleSheet.create({
     lineHeight: 1.2,
     flex: 1,
     textAlign: 'left'
+  },
+  techStack: {
+    flexDirection: 'row',
+    marginTop: 2,
+    marginBottom: 2
+  },
+  techStackLabel: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#000'
+  },
+  techStackList: {
+    fontSize: 9,
+    color: '#000',
+    flex: 1
   }
 });
 
@@ -179,9 +194,9 @@ export const ResumeTemplate = ({ resume }) => {
     if (!resume.contact) return null;
     
     const contactParts = [];
-    if (resume.contact.phone) contactParts.push(resume.contact.phone);
-    if (resume.contact.email) contactParts.push(resume.contact.email);
-    if (resume.contact.linkedin) contactParts.push(resume.contact.linkedin);
+    if (resume.contact.phone?.trim()) contactParts.push(resume.contact.phone.trim());
+    if (resume.contact.email?.trim()) contactParts.push(resume.contact.email.trim());
+    if (resume.contact.linkedin?.trim()) contactParts.push(resume.contact.linkedin.trim());
     
     if (contactParts.length === 0) return null;
     
@@ -209,7 +224,7 @@ export const ResumeTemplate = ({ resume }) => {
         isEnabled = responsibility.enabled !== false;
       }
       
-      if (isEnabled && text) {
+      if (isEnabled && text && text.trim() !== '') {
         validResponsibilities.push(
           <Text key={i} style={styles.bulletPoint}>
             • {text}
@@ -233,7 +248,7 @@ export const ResumeTemplate = ({ resume }) => {
         </View>
 
         {/* Summary */}
-        {resume.summary && (
+        {resume.summary && resume.summary.trim() && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>SUMMARY</Text>
             <View style={styles.sectionRule} />
@@ -242,17 +257,21 @@ export const ResumeTemplate = ({ resume }) => {
         )}
 
         {/* Experience Section */}
-        {resume.experience && resume.experience.length > 0 && (
+        {resume.experience && resume.experience.filter(job => 
+          job.title?.trim() && job.company?.trim() && job.dates?.trim()
+        ).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>PROFESSIONAL EXPERIENCE</Text>
             <View style={styles.sectionRule} />
-            {resume.experience.map((job, index) => (
+            {resume.experience.filter(job => 
+              job.title?.trim() && job.company?.trim() && job.dates?.trim()
+            ).map((job, index) => (
               <View key={index} style={styles.entry}>
                 <View style={styles.entryHeader}>
                   <View style={styles.entryLeft}>
                     <Text style={styles.entryTitle}>{job.title}</Text>
                     <Text style={styles.entrySubtitle}>
-                      {job.company}{job.location ? ` — ${job.location}` : ''}
+                      {job.company}{job.location && job.location.trim() ? ` — ${job.location}` : ''}
                     </Text>
                   </View>
                   <Text style={styles.entryDate}>{job.dates}</Text>
@@ -262,33 +281,95 @@ export const ResumeTemplate = ({ resume }) => {
                     {renderResponsibilities(job.responsibilities)}
                   </View>
                 )}
+                {job.tech_stack && job.tech_stack.filter(tech => tech.trim() !== '').length > 0 && (
+                  <View style={styles.techStack}>
+                    <Text style={styles.techStackLabel}>Tech Stack: </Text>
+                    <Text style={styles.techStackList}>
+                      {job.tech_stack.filter(tech => tech.trim() !== '').join(', ')}
+                    </Text>
+                  </View>
+                )}
               </View>
             ))}
           </View>
         )}
 
         {/* Technical Skills Section */}
-        {resume.technical_skills && Object.keys(resume.technical_skills).length > 0 && (
+        {resume.technical_skills && Object.entries(resume.technical_skills).some(([category, skills]) => 
+          Array.isArray(skills) && skills.filter(skill => skill.trim() !== '').length > 0
+        ) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>TECHNICAL SKILLS</Text>
             <View style={styles.sectionRule} />
-            {Object.entries(resume.technical_skills).map(([category, skills]) => (
-              skills.length > 0 && (
+            {Object.entries(resume.technical_skills).map(([category, skills]) => {
+              const filteredSkills = Array.isArray(skills) ? skills.filter(skill => skill.trim() !== '') : [];
+              return filteredSkills.length > 0 && (
                 <View key={category} style={styles.skillCategory}>
                   <Text style={styles.skillCategoryTitle}>
                     {category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Text>
                   <Text style={styles.skills}>
-                    {skills.join(', ')}
+                    {filteredSkills.join(', ')}
                   </Text>
                 </View>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Projects Section */}
+        {resume.projects && resume.projects.filter(project => 
+          project.name?.trim() && (
+            (project.bullets && project.bullets.filter(bullet => bullet.trim() !== '').length > 0) ||
+            (project.description && project.description.trim())
+          )
+        ).length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>PROJECTS</Text>
+            <View style={styles.sectionRule} />
+            {resume.projects.filter(project => 
+              project.name?.trim() && (
+                (project.bullets && project.bullets.filter(bullet => bullet.trim() !== '').length > 0) ||
+                (project.description && project.description.trim())
               )
+            ).map((project, index) => (
+              <View key={index} style={styles.entry}>
+                <View style={styles.entryHeader}>
+                  <View style={styles.entryLeft}>
+                    <Text style={styles.entryTitle}>
+                      {project.name}
+                      {project.technologies && project.technologies.filter(tech => tech.trim() !== '').length > 0 && (
+                        <Text style={{fontWeight: 'normal', fontSize: 9, color: '#000'}}>
+                          {' | Tech Stack: '}
+                          {project.technologies.filter(tech => tech.trim() !== '').join(', ')}
+                        </Text>
+                      )}
+                    </Text>
+                  </View>
+                </View>
+                {project.bullets && project.bullets.filter(bullet => bullet.trim() !== '').length > 0 && (
+                  <View style={styles.bullets}>
+                    {project.bullets.filter(bullet => bullet.trim() !== '').map((bullet, bulletIndex) => (
+                      <Text key={bulletIndex} style={styles.bulletPoint}>
+                        • {bullet}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                {project.description && project.description.trim() && !project.bullets && (
+                  <View style={styles.bullets}>
+                    <Text style={styles.bulletPoint}>
+                      {project.description}
+                    </Text>
+                  </View>
+                )}
+              </View>
             ))}
           </View>
         )}
 
         {/* Volunteer Section */}
-        {resume.volunteer && resume.volunteer.title && (
+        {resume.volunteer && resume.volunteer.title?.trim() && resume.volunteer.organization?.trim() && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>VOLUNTEER</Text>
             <View style={styles.sectionRule} />
@@ -298,11 +379,13 @@ export const ResumeTemplate = ({ resume }) => {
                   <Text style={styles.entryTitle}>{resume.volunteer.title}</Text>
                   <Text style={styles.entrySubtitle}>{resume.volunteer.organization}</Text>
                 </View>
-                <Text style={styles.entryDate}>{resume.volunteer.dates}</Text>
+                {resume.volunteer.dates?.trim() && (
+                  <Text style={styles.entryDate}>{resume.volunteer.dates}</Text>
+                )}
               </View>
-              {resume.volunteer.responsibilities && resume.volunteer.responsibilities.length > 0 && (
+              {resume.volunteer.responsibilities && resume.volunteer.responsibilities.filter(resp => resp.trim() !== '').length > 0 && (
                 <View style={styles.bullets}>
-                  {resume.volunteer.responsibilities.map((bullet, bulletIndex) => (
+                  {resume.volunteer.responsibilities.filter(resp => resp.trim() !== '').map((bullet, bulletIndex) => (
                     <Text key={bulletIndex} style={styles.bullet}>
                       • {bullet}
                     </Text>
@@ -314,17 +397,21 @@ export const ResumeTemplate = ({ resume }) => {
         )}
 
         {/* Education Section */}
-        {resume.education && resume.education.length > 0 && (
+        {resume.education && resume.education.filter(edu => 
+          edu.degree?.trim() && edu.institution?.trim() && edu.graduation_date?.trim()
+        ).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
             <View style={styles.sectionRule} />
-            {resume.education.map((edu, index) => (
+            {resume.education.filter(edu => 
+              edu.degree?.trim() && edu.institution?.trim() && edu.graduation_date?.trim()
+            ).map((edu, index) => (
               <View key={index} style={styles.entry}>
                 <View style={styles.entryHeader}>
                   <View style={styles.entryLeft}>
                     <Text style={styles.entryTitle}>{edu.degree}</Text>
                     <Text style={styles.entrySubtitle}>
-                      {edu.institution}{edu.location ? ` — ${edu.location}` : ''}
+                      {edu.institution}{edu.location && edu.location.trim() ? ` — ${edu.location}` : ''}
                     </Text>
                   </View>
                   <Text style={styles.entryDate}>{edu.graduation_date}</Text>

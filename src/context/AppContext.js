@@ -30,7 +30,8 @@ const initialState = {
       dates: '',
       responsibilities: []
     },
-    education: []
+    education: [],
+    projects: []
   },
   
   // Skills
@@ -88,6 +89,11 @@ const ACTIONS = {
   DELETE_EDUCATION: 'DELETE_EDUCATION',
   ADD_EXPERIENCE: 'ADD_EXPERIENCE',
   ADD_EDUCATION: 'ADD_EDUCATION',
+  // Project actions
+  UPDATE_PROJECT: 'UPDATE_PROJECT',
+  REORDER_PROJECTS: 'REORDER_PROJECTS',
+  DELETE_PROJECT: 'DELETE_PROJECT',
+  ADD_PROJECT: 'ADD_PROJECT',
   // Bullet management actions for new schema
   TOGGLE_EXPERIENCE_BULLET: 'TOGGLE_EXPERIENCE_BULLET',
   ADD_EXPERIENCE_BULLET: 'ADD_EXPERIENCE_BULLET',
@@ -234,7 +240,17 @@ function appReducer(state, action) {
       const { experienceIndex, updatedExperience } = action.payload;
       const updatedExpResumeJSON = { ...state.resumeJSON };
       if (updatedExpResumeJSON.experience && updatedExpResumeJSON.experience[experienceIndex]) {
-        updatedExpResumeJSON.experience[experienceIndex] = updatedExperience;
+        // Only filter out empty responsibilities on save, not during editing
+        const filteredExperience = {
+          ...updatedExperience,
+          responsibilities: (updatedExperience.responsibilities || []).filter(resp => {
+            if (typeof resp === 'string') {
+              return resp.trim() !== '';
+            }
+            return resp.text && resp.text.trim() !== '';
+          })
+        };
+        updatedExpResumeJSON.experience[experienceIndex] = filteredExperience;
       }
       return { ...state, resumeJSON: updatedExpResumeJSON };
       
@@ -242,7 +258,16 @@ function appReducer(state, action) {
       const { educationIndex, updatedEducation } = action.payload;
       const updatedEduResumeJSON = { ...state.resumeJSON };
       if (updatedEduResumeJSON.education && updatedEduResumeJSON.education[educationIndex]) {
-        updatedEduResumeJSON.education[educationIndex] = updatedEducation;
+        // Filter out empty fields
+        const filteredEducation = {
+          ...updatedEducation,
+          degree: updatedEducation.degree?.trim() || '',
+          school: updatedEducation.school?.trim() || '',
+          dates: updatedEducation.dates?.trim() || '',
+          gpa: updatedEducation.gpa?.trim() || '',
+          location: updatedEducation.location?.trim() || ''
+        };
+        updatedEduResumeJSON.education[educationIndex] = filteredEducation;
       }
       return { ...state, resumeJSON: updatedEduResumeJSON };
       
@@ -250,7 +275,11 @@ function appReducer(state, action) {
       const { skillCategory, updatedSkills } = action.payload;
       const updatedSkillsResumeJSON = { ...state.resumeJSON };
       if (updatedSkillsResumeJSON.technical_skills) {
-        updatedSkillsResumeJSON.technical_skills[skillCategory] = updatedSkills;
+        // Filter out empty skills
+        const filteredSkills = Array.isArray(updatedSkills) 
+          ? updatedSkills.filter(skill => skill.trim() !== '')
+          : updatedSkills;
+        updatedSkillsResumeJSON.technical_skills[skillCategory] = filteredSkills;
       }
       return { ...state, resumeJSON: updatedSkillsResumeJSON };
       
@@ -258,23 +287,36 @@ function appReducer(state, action) {
       const { contactField, contactValue } = action.payload;
       const updatedContactResumeJSON = { ...state.resumeJSON };
       if (updatedContactResumeJSON.contact) {
-        updatedContactResumeJSON.contact[contactField] = contactValue;
+        // Filter out empty contact values
+        updatedContactResumeJSON.contact[contactField] = contactValue?.trim() || '';
       }
       return { ...state, resumeJSON: updatedContactResumeJSON };
       
     case ACTIONS.UPDATE_SUMMARY:
       const updatedSummaryResumeJSON = { ...state.resumeJSON };
-      updatedSummaryResumeJSON.summary = action.payload;
+      updatedSummaryResumeJSON.summary = action.payload?.trim() || '';
       return { ...state, resumeJSON: updatedSummaryResumeJSON };
       
     case ACTIONS.UPDATE_CERTIFICATIONS:
       const updatedCertResumeJSON = { ...state.resumeJSON };
-      updatedCertResumeJSON.certifications = action.payload;
+      // Filter out empty certifications
+      const filteredCertifications = Array.isArray(action.payload) 
+        ? action.payload.filter(cert => cert.trim() !== '')
+        : action.payload;
+      updatedCertResumeJSON.certifications = filteredCertifications;
       return { ...state, resumeJSON: updatedCertResumeJSON };
       
     case ACTIONS.UPDATE_VOLUNTEER:
       const updatedVolunteerResumeJSON = { ...state.resumeJSON };
-      updatedVolunteerResumeJSON.volunteer = action.payload;
+      // Filter out empty volunteer fields
+      const filteredVolunteer = {
+        ...action.payload,
+        title: action.payload.title?.trim() || '',
+        organization: action.payload.organization?.trim() || '',
+        dates: action.payload.dates?.trim() || '',
+        responsibilities: (action.payload.responsibilities || []).filter(resp => resp.trim() !== '')
+      };
+      updatedVolunteerResumeJSON.volunteer = filteredVolunteer;
       return { ...state, resumeJSON: updatedVolunteerResumeJSON };
       
     case ACTIONS.REORDER_EXPERIENCE:
@@ -328,6 +370,49 @@ function appReducer(state, action) {
       }
       addedEduResumeJSON.education.push(newEducation);
       return { ...state, resumeJSON: addedEduResumeJSON };
+      
+    // Project actions
+    case ACTIONS.UPDATE_PROJECT:
+      const { projectIndex, updatedProject } = action.payload;
+      const updatedProjResumeJSON = { ...state.resumeJSON };
+      if (updatedProjResumeJSON.projects && updatedProjResumeJSON.projects[projectIndex]) {
+        // Filter out empty project fields
+        const filteredProject = {
+          ...updatedProject,
+          name: updatedProject.name?.trim() || '',
+          description: updatedProject.description?.trim() || '',
+          technologies: (updatedProject.technologies || []).filter(tech => tech.trim() !== ''),
+          bullets: (updatedProject.bullets || []).filter(bullet => bullet.trim() !== '')
+        };
+        updatedProjResumeJSON.projects[projectIndex] = filteredProject;
+      }
+      return { ...state, resumeJSON: updatedProjResumeJSON };
+      
+    case ACTIONS.REORDER_PROJECTS:
+      const { fromIndex: projFromIndex, toIndex: projToIndex } = action.payload;
+      const reorderedProjResumeJSON = { ...state.resumeJSON };
+      if (reorderedProjResumeJSON.projects) {
+        const [movedProject] = reorderedProjResumeJSON.projects.splice(projFromIndex, 1);
+        reorderedProjResumeJSON.projects.splice(projToIndex, 0, movedProject);
+      }
+      return { ...state, resumeJSON: reorderedProjResumeJSON };
+      
+    case ACTIONS.DELETE_PROJECT:
+      const { deleteProjIndex } = action.payload;
+      const deletedProjResumeJSON = { ...state.resumeJSON };
+      if (deletedProjResumeJSON.projects && deletedProjResumeJSON.projects[deleteProjIndex]) {
+        deletedProjResumeJSON.projects.splice(deleteProjIndex, 1);
+      }
+      return { ...state, resumeJSON: deletedProjResumeJSON };
+      
+    case ACTIONS.ADD_PROJECT:
+      const newProject = action.payload;
+      const addedProjResumeJSON = { ...state.resumeJSON };
+      if (!addedProjResumeJSON.projects) {
+        addedProjResumeJSON.projects = [];
+      }
+      addedProjResumeJSON.projects.push(newProject);
+      return { ...state, resumeJSON: addedProjResumeJSON };
       
     // Bullet management actions for new schema
     case ACTIONS.TOGGLE_EXPERIENCE_BULLET:
@@ -394,14 +479,19 @@ function appReducer(state, action) {
       if (updatedBulletResumeJSON.experience && updatedBulletResumeJSON.experience[updateExpIndex]) {
         const job = updatedBulletResumeJSON.experience[updateExpIndex];
         if (job.responsibilities && job.responsibilities[updateBulletIndex]) {
-          if (typeof job.responsibilities[updateBulletIndex] === 'string') {
-            job.responsibilities[updateBulletIndex] = {
-              text: newText,
-              enabled: true,
-              origin: 'user'
-            };
+          // Filter out empty bullets
+          if (newText.trim() === '') {
+            job.responsibilities = job.responsibilities.filter((_, index) => index !== updateBulletIndex);
           } else {
-            job.responsibilities[updateBulletIndex].text = newText;
+            if (typeof job.responsibilities[updateBulletIndex] === 'string') {
+              job.responsibilities[updateBulletIndex] = {
+                text: newText.trim(),
+                enabled: true,
+                origin: 'user'
+              };
+            } else {
+              job.responsibilities[updateBulletIndex].text = newText.trim();
+            }
           }
         }
       }
@@ -604,6 +694,31 @@ export function AppProvider({ children }) {
       dispatch({
         type: ACTIONS.ADD_EDUCATION,
         payload: newEducation
+      }),
+      
+    // Project action creators
+    updateProject: (projectIndex, updatedProject) =>
+      dispatch({
+        type: ACTIONS.UPDATE_PROJECT,
+        payload: { projectIndex, updatedProject }
+      }),
+      
+    reorderProjects: (fromIndex, toIndex) =>
+      dispatch({
+        type: ACTIONS.REORDER_PROJECTS,
+        payload: { fromIndex, toIndex }
+      }),
+      
+    deleteProject: (projectIndex) =>
+      dispatch({
+        type: ACTIONS.DELETE_PROJECT,
+        payload: { deleteProjIndex: projectIndex }
+      }),
+      
+    addProject: (newProject) =>
+      dispatch({
+        type: ACTIONS.ADD_PROJECT,
+        payload: newProject
       }),
       
     // Bullet management action creators for new schema

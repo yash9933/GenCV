@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
@@ -107,7 +108,8 @@ class GeminiClient {
         'summary',
         'experience',
         'technical_skills',
-        'education'
+        'education',
+        'projects'
       ];
       const missingKeys = requiredKeys.filter((key) => !parsedResponse.hasOwnProperty(key));
 
@@ -225,6 +227,15 @@ Your task: Convert the given RESUME TEXT into a structured JSON following the RE
 Do not include markdown, explanations, or extra text. Output ONLY valid JSON.
 If data is missing, use "" or [].
 
+IMPORTANT: When parsing projects, extract ALL projects found in the resume dynamically:
+- Parse ANY number of projects (0, 1, 2, 3, 4, 5, or more)
+- Each project should have a complete name (not empty)
+- All technologies listed in the project header (e.g., "Project Name | Tech1, Tech2, Tech3")
+- A combined description from all bullet points for that project
+- Handle duplicate project names if they appear (treat as separate projects)
+- If no projects section exists, return empty array []
+- If projects section exists but is empty, return empty array []
+
 RESUME TEXT:
 ${resumeText}
 
@@ -255,7 +266,8 @@ REQUIRED JSON SCHEMA:
       "responsibilities": [
         "Achievement 1",
         "Achievement 2"
-      ]
+      ],
+      "tech_stack": ["Technology1", "Technology2", "Technology3"]
     }
   ],
   "technical_skills": {
@@ -291,6 +303,37 @@ REQUIRED JSON SCHEMA:
       "location": "City, State or Country",
       "graduation_date": "MMM YYYY"
     }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "technologies": ["Tech1", "Tech2"],
+      "description": "",
+      "bullets": [
+        "First bullet point about the project",
+        "Second bullet point about the project",
+        "Third bullet point about the project"
+      ]
+    },
+    {
+      "name": "Another Project",
+      "technologies": ["Tech3", "Tech4"],
+      "description": "",
+      "bullets": [
+        "First bullet point about another project",
+        "Second bullet point about another project"
+      ]
+    },
+    {
+      "name": "Third Project",
+      "technologies": ["Tech5", "Tech6", "Tech7"],
+      "description": "",
+      "bullets": [
+        "First bullet point about third project",
+        "Second bullet point about third project",
+        "Third bullet point about third project"
+      ]
+    }
   ]
 }
 
@@ -306,8 +349,22 @@ RULES:
    - Java, Python, etc. → programming_languages
 5. Do NOT create "Other Skills".
 6. Flatten all bullets into "responsibilities" arrays for experience and volunteer sections.
-7. Extract certifications from the resume text (PMP, CAPM, CSM, etc.).
-8. Ensure valid JSON with double quotes only.`;
+7. Extract tech stack from experience entries:
+   - Look for "Tech Stack:" lines after bullet points in each experience entry
+   - Parse technologies as comma-separated values into the tech_stack array
+   - If no tech stack is mentioned, use empty array []
+8. Extract certifications from the resume text (PMP, CAPM, CSM, etc.).
+9. Extract ALL projects from the resume text dynamically:
+   - Parse ANY number of projects found (0 to N projects)
+   - Each project should have: name, technologies array, description, and bullets array
+   - Do not create empty project entries
+   - For bullets: Extract each bullet point (•) as a separate string in the bullets array
+   - For description: Only create a brief summary (1-2 sentences) if there are no bullet points. If bullets exist, leave description empty or as a brief project overview
+   - Technologies should be extracted from the project header (e.g., "Project Name | Tech1, Tech2, Tech3")
+   - Handle duplicate project names as separate entries if they appear
+   - If no projects section exists, return empty array []
+   - If projects section exists but is empty, return empty array []
+9. Ensure valid JSON with double quotes only.`;
   }
 }
 
