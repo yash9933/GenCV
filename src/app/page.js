@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { AppProvider, useAppContext } from '../context/AppContext';
 import { 
+  HomePage,
+  Footer,
   ResumeInputForm, 
   SkillChecklist, 
   ResumeJSONViewer, 
@@ -101,8 +103,14 @@ function PasswordProtection({ onPasswordCorrect }) {
  */
 function AppContent() {
   const { state, actions } = useAppContext();
+  const [hasStarted, setHasStarted] = useState(false);
 
   // Navigation handlers
+  const handleGetStarted = () => {
+    setHasStarted(true);
+    actions.setCurrentStep('input');
+  };
+
   const handleStepClick = (step) => {
     // Only allow navigation to completed steps or current step
     if (step === 'input' || 
@@ -143,19 +151,37 @@ function AppContent() {
     }
   };
 
+  // Show home page if user hasn't started yet
+  if (!hasStarted) {
+    return <HomePage onGetStarted={handleGetStarted} />;
+  }
+
+  // Handle going back to home page
+  const handleBackToHome = () => {
+    setHasStarted(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">
-                AI Resume Builder
-              </h1>
-              <p className="text-sm text-gray-600">
-                Generate human-like, ATS-friendly resumes and cover letters
-              </p>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleBackToHome}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+              >
+                ← Back to Home
+              </button>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  AI Resume Builder
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Generate human-like, ATS-friendly resumes and cover letters
+                </p>
+              </div>
             </div>
             
             {/* Progress Indicator */}
@@ -185,7 +211,6 @@ function AppContent() {
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   state.currentStep === 'skills' ? 'bg-blue-600 text-white' : 
-                  state.currentStep === 'editor' ? 'bg-green-600 text-white' : 
                   isSkillsAccessible ? 'bg-gray-200 text-gray-600' : 'bg-gray-100 text-gray-400'
                 }`}>
                   2
@@ -221,17 +246,7 @@ function AppContent() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-sm text-gray-600">
-            <p>Built with ❤️ by Yash</p>
-            <p className="mt-2">
-              Generate professional resumes and cover letters that stand out to ATS systems and hiring managers. <br />
-              Powered by Next.js, Tailwind CSS, and AI by GPT+Gemini <br />
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
@@ -239,16 +254,17 @@ function AppContent() {
 /**
  * Main Page Component with Password Protection
  */
-export default function HomePage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export default function MainPage() {
+  // Password protection temporarily disabled - uncomment to re-enable
+  // const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const handlePasswordCorrect = () => {
-    setIsAuthenticated(true);
-  };
+  // const handlePasswordCorrect = () => {
+  //   setIsAuthenticated(true);
+  // };
 
-  if (!isAuthenticated) {
-    return <PasswordProtection onPasswordCorrect={handlePasswordCorrect} />;
-  }
+  // if (!isAuthenticated) {
+  //   return <PasswordProtection onPasswordCorrect={handlePasswordCorrect} />;
+  // }
 
   return (
     <AppProvider>

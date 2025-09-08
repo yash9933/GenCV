@@ -594,6 +594,22 @@ const ResumeEditor = () => {
                     placeholder="LinkedIn URL"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio</label>
+                  <Input
+                    value={resumeJSON.contact?.portfolio || ''}
+                    onChange={(e) => actions.updateContact('portfolio', e.target.value)}
+                    placeholder="Portfolio URL"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">GitHub</label>
+                  <Input
+                    value={resumeJSON.contact?.github || ''}
+                    onChange={(e) => actions.updateContact('github', e.target.value)}
+                    placeholder="GitHub URL"
+                  />
+                </div>
               </div>
             </div>
 
@@ -698,6 +714,7 @@ const ResumeEditor = () => {
                     size="sm"
                     onClick={() => actions.addProject({
                       name: '',
+                      url: '',
                       technologies: [],
                       bullets: []
                     })}
@@ -1795,6 +1812,7 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
     const filteredProject = {
       ...editedProject,
       name: editedProject.name?.trim() || '',
+      url: editedProject.url?.trim() || '',
       technologies: (editedProject.technologies || []).filter(tech => tech.trim() !== ''),
       bullets: (editedProject.bullets || []).filter(bullet => bullet.trim() !== '')
     };
@@ -1928,6 +1946,15 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
           </div>
           
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Project URL (Optional)</label>
+            <Input
+              value={editedProject.url || ''}
+              onChange={(e) => setEditedProject({ ...editedProject, url: e.target.value })}
+              placeholder="https://project-url.com"
+            />
+          </div>
+          
+          <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-700">Technologies</label>
               <Button variant="outline" size="sm" onClick={addTechnology}>
@@ -1983,7 +2010,18 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
       ) : (
         <div>
           <div className="mb-2">
-            <span className="font-semibold text-gray-900">{project.name}</span>
+            {project.url && project.url.trim() ? (
+              <a 
+                href={project.url.startsWith('http') ? project.url : `https://${project.url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-blue-600 hover:text-blue-800 underline"
+              >
+                {project.name}
+              </a>
+            ) : (
+              <span className="font-semibold text-gray-900">{project.name}</span>
+            )}
             {project.technologies && project.technologies.filter(tech => tech.trim() !== '').length > 0 && (
               <span className="font-normal text-gray-600">
                 {' | Tech Stack: '}

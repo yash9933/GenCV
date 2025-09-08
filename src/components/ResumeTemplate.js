@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Link } from '@react-pdf/renderer';
 
 // Fonts
 Font.register({
@@ -35,6 +35,11 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#000',
     lineHeight: 1.2
+  },
+  contactLink: {
+    fontSize: 9,
+    color: '#0066cc',
+    textDecoration: 'underline'
   },
   section: {
     marginBottom: 8 // Further reduced
@@ -193,14 +198,73 @@ export const ResumeTemplate = ({ resume }) => {
   const renderContactInfo = () => {
     if (!resume.contact) return null;
     
-    const contactParts = [];
-    if (resume.contact.phone?.trim()) contactParts.push(resume.contact.phone.trim());
-    if (resume.contact.email?.trim()) contactParts.push(resume.contact.email.trim());
-    if (resume.contact.linkedin?.trim()) contactParts.push(resume.contact.linkedin.trim());
+    const contactElements = [];
     
-    if (contactParts.length === 0) return null;
+    // Add phone
+    if (resume.contact.phone?.trim()) {
+      contactElements.push(
+        <Text key="phone" style={styles.contact}>{resume.contact.phone.trim()}</Text>
+      );
+    }
     
-    return <Text style={styles.contact}>{contactParts.join(' • ')}</Text>;
+    // Add email
+    if (resume.contact.email?.trim()) {
+      contactElements.push(
+        <Text key="email" style={styles.contact}>{resume.contact.email.trim()}</Text>
+      );
+    }
+    
+    // Add LinkedIn as hyperlink
+    if (resume.contact.linkedin?.trim()) {
+      const linkedinUrl = resume.contact.linkedin.trim();
+      // Ensure URL has protocol
+      const fullLinkedinUrl = linkedinUrl.startsWith('http') ? linkedinUrl : `https://${linkedinUrl}`;
+      
+      contactElements.push(
+        <Text key="linkedin" style={styles.contact}>
+          <Link src={fullLinkedinUrl} style={styles.contactLink}>LinkedIn</Link>
+        </Text>
+      );
+    }
+    
+    // Add Portfolio as hyperlink
+    if (resume.contact.portfolio?.trim()) {
+      const portfolioUrl = resume.contact.portfolio.trim();
+      // Ensure URL has protocol
+      const fullPortfolioUrl = portfolioUrl.startsWith('http') ? portfolioUrl : `https://${portfolioUrl}`;
+      
+      contactElements.push(
+        <Text key="portfolio" style={styles.contact}>
+          <Link src={fullPortfolioUrl} style={styles.contactLink}>Portfolio</Link>
+        </Text>
+      );
+    }
+    
+    // Add GitHub as hyperlink
+    if (resume.contact.github?.trim()) {
+      const githubUrl = resume.contact.github.trim();
+      // Ensure URL has protocol
+      const fullGithubUrl = githubUrl.startsWith('http') ? githubUrl : `https://${githubUrl}`;
+      
+      contactElements.push(
+        <Text key="github" style={styles.contact}>
+          <Link src={fullGithubUrl} style={styles.contactLink}>GitHub</Link>
+        </Text>
+      );
+    }
+    
+    if (contactElements.length === 0) return null;
+    
+    // Join elements with bullet separators
+    const result = [];
+    contactElements.forEach((element, index) => {
+      if (index > 0) {
+        result.push(<Text key={`separator-${index}`} style={styles.contact}> • </Text>);
+      }
+      result.push(element);
+    });
+    
+    return <Text style={styles.contact}>{result}</Text>;
   };
 
   // Helper function to safely render responsibilities - simplified for PDF compatibility
@@ -337,7 +401,16 @@ export const ResumeTemplate = ({ resume }) => {
                 <View style={styles.entryHeader}>
                   <View style={styles.entryLeft}>
                     <Text style={styles.entryTitle}>
-                      {project.name}
+                      {project.url && project.url.trim() ? (
+                        <Link 
+                          src={project.url.startsWith('http') ? project.url : `https://${project.url}`}
+                          style={styles.contactLink}
+                        >
+                          {project.name}
+                        </Link>
+                      ) : (
+                        project.name
+                      )}
                       {project.technologies && project.technologies.filter(tech => tech.trim() !== '').length > 0 && (
                         <Text style={{fontWeight: 'normal', fontSize: 9, color: '#000'}}>
                           {' | Tech Stack: '}

@@ -1,4 +1,6 @@
 // Main components
+export { default as HomePage } from './HomePage.js';
+export { default as Footer } from './Footer.js';
 export { default as ResumeInputForm } from './ResumeInputForm.js';
 export { default as SkillChecklist } from './SkillChecklist.js';
 export { default as ResumeEditor } from './ResumeEditor.js';

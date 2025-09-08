@@ -307,6 +307,7 @@ REQUIRED JSON SCHEMA:
   "projects": [
     {
       "name": "Project Name",
+      "url": "https://project-url.com",
       "technologies": ["Tech1", "Tech2"],
       "description": "",
       "bullets": [
@@ -354,17 +355,23 @@ RULES:
    - Parse technologies as comma-separated values into the tech_stack array
    - If no tech stack is mentioned, use empty array []
 8. Extract certifications from the resume text (PMP, CAPM, CSM, etc.).
-9. Extract ALL projects from the resume text dynamically:
+9. Extract contact links from the resume text:
+   - Look for GitHub URLs (github.com/username) and extract into contact.github
+   - Look for Portfolio/Website URLs and extract into contact.portfolio
+   - Look for LinkedIn URLs (linkedin.com/in/username) and extract into contact.linkedin
+   - If no URLs found, use empty string ""
+10. Extract ALL projects from the resume text dynamically:
    - Parse ANY number of projects found (0 to N projects)
-   - Each project should have: name, technologies array, description, and bullets array
+   - Each project should have: name, url, technologies array, description, and bullets array
    - Do not create empty project entries
    - For bullets: Extract each bullet point (•) as a separate string in the bullets array
    - For description: Only create a brief summary (1-2 sentences) if there are no bullet points. If bullets exist, leave description empty or as a brief project overview
+   - For url: Look for URLs associated with each project (github.com, project websites, demo links, etc.) and extract into the url field. If no URL found, use empty string ""
    - Technologies should be extracted from the project header (e.g., "Project Name | Tech1, Tech2, Tech3")
    - Handle duplicate project names as separate entries if they appear
    - If no projects section exists, return empty array []
    - If projects section exists but is empty, return empty array []
-9. Ensure valid JSON with double quotes only.`;
+11. Ensure valid JSON with double quotes only.`;
   }
 }
 
