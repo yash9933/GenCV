@@ -166,6 +166,23 @@ class GeminiClient {
         }
       }
 
+      // Sanitize bullets: remove trailing " at <Company>" phrases
+      try {
+        if (parsedResponse && Array.isArray(parsedResponse.bullets)) {
+          parsedResponse.bullets = parsedResponse.bullets.map(group => {
+            const cleaned = { ...group };
+            if (Array.isArray(cleaned.bullets)) {
+              cleaned.bullets = cleaned.bullets.map(b => {
+                if (typeof b !== 'string') return b;
+                // Remove patterns like " at Company", " at ACME Corp", optional trailing period
+                return b.replace(/\s+at\s+[A-Za-z0-9&.,'()\-\s]+\.?$/i, '').trim();
+              });
+            }
+            return cleaned;
+          });
+        }
+      } catch (_) {}
+
       return parsedResponse;
     } catch (error) {
       console.error('Error in generateBulletPoints:', error);
@@ -179,41 +196,51 @@ class GeminiClient {
    * @returns {string} - Formatted prompt
    */
   buildBulletPrompt({ jobDescription, resumeText, selectedSkills }) {
-    return `You are an expert resume writer and career coach. Based on the job description and resume text provided, generate 3-5 compelling bullet points for each selected skill that would be relevant for this position.
+    return `You are an expert technical recruiter and resume coach.
 
-JOB DESCRIPTION:
+INPUTS:
+- JOB DESCRIPTION (JD):
 ${jobDescription}
-
-RESUME TEXT:
-${resumeText}
-
-SELECTED SKILLS TO GENERATE BULLETS FOR:
+- SELECTED SKILLS:
 ${selectedSkills.join(', ')}
 
-Generate bullet points that:
-1. Are specific and quantifiable when possible
-2. Use strong action verbs
-3. Highlight relevant achievements from the resume
-4. Match the job requirements
-5. Are ATS-friendly
-6. Are NEW and ENHANCED versions of existing content, not just reordered
+TASK:
+Generate NEW resume bullet points based ONLY on the JD and the selected skills (do not reuse the candidate's original resume text). Bullets should slot naturally into an experience section without naming the company.
 
-Format the response as a JSON object with this structure:
+GENERATION RULES:
+- STAR: Each bullet should imply Situation/Task, Action, Result in one concise sentence.
+- Each bullet must showcase exactly ONE selected skill.
+- Up to 2 bullets per skill with different angles (technical depth vs. impact/outcome). It's okay if both include both aspects.
+- Length: 15–22 words (never below 15 words).
+- Language: Strong action verbs; professional tone; no first-person pronouns; avoid buzzwords (e.g., synergy, cutting-edge).
+- ATS-friendly: Include JD keywords naturally; do not keyword-stuff.
+- Metrics: Only ~30–50% of bullets include realistic metrics (%, $, time, users). Others emphasize scope, collaboration, or improvements without numbers.
+- Do NOT append phrases like "at <Company>" or company names at the end of bullets.
+ - Prefer CONCRETE specifics over vague language. Name relevant tools/services/frameworks from the JD when appropriate (e.g., Jenkins, GitHub Actions, Kubernetes, Terraform, AWS, Prometheus, Grafana, Datadog, New Relic, Snowflake, Kafka).
+ - Structure each bullet like: Action + specific tool/approach + how it was done + measurable or qualitative outcome.
+ - Avoid generic wording like "improved systems" without specifying what was improved and how.
+
+OUTPUT JSON FORMAT:
 {
   "bullets": [
     {
-      "skill": "skill_name",
+      "skill": "<one_selected_skill>",
       "bullets": [
-        "bullet point 1",
-        "bullet point 2",
-        "bullet point 3"
+        "<bullet 1>",
+        "<bullet 2>"
       ]
     }
   ],
-  "coverLetter": "A compelling cover letter paragraph that ties the candidate's experience to the job requirements"
+  "coverLetter": "A concise cover letter paragraph tying experience to the JD (optional)"
 }
 
-Ensure the JSON is valid and properly formatted. Generate NEW content, not just reordered existing content.`;
+EXAMPLES (style and specificity):
+- Improved Jenkins-based CI/CD pipeline, cutting deployment time by 50% and enabling confident, faster developer releases.
+- Set up Prometheus and Grafana monitoring, sustaining 99.9% uptime and surfacing production issues before user impact.
+- Re-architected a Go microservice to Python FastAPI with typed clients and retries, reducing cloud spend 15% while simplifying on-call with clearer observability.
+- Implemented Flask APIs with Celery and Redis queues to decouple partner ops, lowering order sync latency 35% and reducing manual exceptions.
+
+Return ONLY valid JSON.`;
   }
 
   /**
