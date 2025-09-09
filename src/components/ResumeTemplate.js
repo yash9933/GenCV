@@ -464,13 +464,13 @@ export const ResumeTemplate = ({ resume }) => {
 
         {/* Education Section */}
         {resume.education && resume.education.filter(edu => 
-          edu.degree?.trim() && edu.institution?.trim() && edu.graduation_date?.trim()
+          edu.degree?.trim() && edu.institution?.trim()
         ).length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
             <View style={styles.sectionRule} />
             {resume.education.filter(edu => 
-              edu.degree?.trim() && edu.institution?.trim() && edu.graduation_date?.trim()
+              edu.degree?.trim() && edu.institution?.trim()
             ).map((edu, index) => (
               <View key={index} style={styles.entry}>
                 <View style={styles.entryHeader}>
@@ -480,7 +480,9 @@ export const ResumeTemplate = ({ resume }) => {
                       {edu.institution}{edu.location && edu.location.trim() ? ` — ${edu.location}` : ''}
                     </Text>
                   </View>
-                  <Text style={styles.entryDate}>{edu.graduation_date}</Text>
+                  {edu.graduation_date?.trim() && (
+                    <Text style={styles.entryDate}>{edu.graduation_date}</Text>
+                  )}
                 </View>
               </View>
             ))}

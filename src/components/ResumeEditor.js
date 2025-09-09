@@ -591,7 +591,11 @@ const ResumeEditor = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                   <Input
                     value={resumeJSON.name || ''}
-                    onChange={(e) => actions.updateContact('name', e.target.value)}
+                    onChange={(e) => {
+                      const updated = { ...resumeJSON };
+                      updated.name = e.target.value;
+                      actions.setResumeJSON(updated);
+                    }}
                     placeholder="Full Name"
                   />
                 </div>

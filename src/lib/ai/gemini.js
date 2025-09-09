@@ -398,7 +398,7 @@ RULES:
 7. Extract tech stack from experience entries:
    - Look for "Tech Stack:" lines after bullet points in each experience entry
    - Parse technologies as comma-separated values into the tech_stack array
-   - If no tech stack is mentioned, use empty array []
+   - If no tech stack is mentioned, use empty array [] (do not generate or infer tech stack)
 8. Extract certifications from the resume text (PMP, CAPM, CSM, etc.).
 9. Extract contact links from the resume text:
    - Look for GitHub URLs (github.com/username) and extract into contact.github
