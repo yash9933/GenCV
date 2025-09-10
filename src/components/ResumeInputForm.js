@@ -99,15 +99,15 @@ const ResumeInputForm = () => {
   };
 
     return (
-    <div className="max-w-6xl mx-auto p-8 h-full">
-      <div className="bg-white rounded-lg shadow-lg p-10 h-full flex flex-col">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">
+    <div className="max-w-5xl mx-auto p-4 h-full">
+      <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">
           AI Resume Builder
         </h2>
         
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col space-y-4">
           {/* Two Column Layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6">
                          {/* Job Description */}
              <div className="flex flex-col">
                <Textarea
@@ -115,7 +115,7 @@ const ResumeInputForm = () => {
                  value={state.jobDescription}
                  onChange={handleJobDescriptionChange}
                  placeholder="Paste the job description here..."
-                 rows={18}
+                 rows={17}
                  required
                  className="flex-1"
                />
@@ -164,7 +164,7 @@ const ResumeInputForm = () => {
                    value={state.originalResume}
                    onChange={handleResumeChange}
                    placeholder="Paste your resume text here..."
-                   rows={11}
+                   rows={10}
                    className="flex-1"
                  />
                </div>

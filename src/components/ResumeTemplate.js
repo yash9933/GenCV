@@ -84,6 +84,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#000'
   },
+  certificationList: {
+    fontSize: 10,
+    color: '#000',
+    lineHeight: 1.3
+  },
+  certificationItem: {
+    fontSize: 10,
+    color: '#000',
+    lineHeight: 1.3,
+    marginBottom: 2
+  },
+  certificationLink: {
+    fontSize: 10,
+    color: '#0066cc',
+    textDecoration: 'underline'
+  },
   summary: {
     fontSize: 10,
     lineHeight: 1.3,
@@ -458,6 +474,43 @@ export const ResumeTemplate = ({ resume }) => {
                   ))}
                 </View>
               )}
+            </View>
+          </View>
+        )}
+
+        {/* Certifications Section */}
+        {resume.certifications && resume.certifications.filter(cert => 
+          (typeof cert === 'string' && cert.trim() !== '') || 
+          (typeof cert === 'object' && cert.name && cert.name.trim() !== '')
+        ).length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitleWithRule}>CERTIFICATIONS</Text>
+            <View style={styles.sectionRule} />
+            <View style={styles.entry}>
+              {resume.certifications.filter(cert => 
+                (typeof cert === 'string' && cert.trim() !== '') || 
+                (typeof cert === 'object' && cert.name && cert.name.trim() !== '')
+              ).map((cert, index) => {
+                if (typeof cert === 'string') {
+                  return (
+                    <Text key={index} style={styles.certificationItem}>
+                      • {cert}
+                    </Text>
+                  );
+                } else {
+                  return (
+                    <Text key={index} style={styles.certificationItem}>
+                      • {cert.url ? (
+                        <Link src={cert.url} style={styles.certificationLink}>
+                          {cert.name}
+                        </Link>
+                      ) : (
+                        cert.name
+                      )}
+                    </Text>
+                  );
+                }
+              })}
             </View>
           </View>
         )}

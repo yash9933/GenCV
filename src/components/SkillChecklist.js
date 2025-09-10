@@ -6,6 +6,70 @@ import Button from './ui/Button';
 import Checkbox from './ui/Checkbox';
 import toast from 'react-hot-toast';
 
+// Helper function to extract resume metadata
+const extractResumeMetadata = (resumeJSON) => {
+  if (!resumeJSON) return null;
+  
+  return {
+    name: resumeJSON.name || '',
+    title: resumeJSON.title || '',
+    summary: resumeJSON.summary || '',
+    contact: resumeJSON.contact || {},
+    // Calculate years of experience from experience array
+    yearsOfExperience: calculateYearsOfExperience(resumeJSON.experience || [])
+  };
+};
+
+// Helper function to calculate years of experience
+const calculateYearsOfExperience = (experience) => {
+  if (!experience || experience.length === 0) return 0;
+  
+  // Simple calculation - could be more sophisticated
+  return Math.max(1, Math.floor(experience.length * 2)); // Rough estimate
+};
+
+// Helper function to extract selected/enabled bullets
+const extractSelectedBullets = (resumeJSON) => {
+  if (!resumeJSON) return [];
+  
+  const bullets = [];
+  
+  // Extract from experience section
+  if (resumeJSON.experience && Array.isArray(resumeJSON.experience)) {
+    resumeJSON.experience.forEach(job => {
+      if (job.responsibilities && Array.isArray(job.responsibilities)) {
+        job.responsibilities.forEach(resp => {
+          // Handle both string and object formats
+          if (typeof resp === 'string') {
+            bullets.push(resp);
+          } else if (resp && resp.text && resp.enabled !== false) {
+            bullets.push(resp.text);
+          }
+        });
+      }
+    });
+  }
+  
+  // Extract from sections (old schema)
+  if (resumeJSON.sections && Array.isArray(resumeJSON.sections)) {
+    resumeJSON.sections.forEach(section => {
+      if (section.entries && Array.isArray(section.entries)) {
+        section.entries.forEach(entry => {
+          if (entry.bullets && Array.isArray(entry.bullets)) {
+            entry.bullets.forEach(bullet => {
+              if (bullet.enabled !== false && bullet.text) {
+                bullets.push(bullet.text);
+              }
+            });
+          }
+        });
+      }
+    });
+  }
+  
+  return bullets;
+};
+
 /**
  * Skill Checklist Component
  * Displays suggested skills for user selection
@@ -154,6 +218,8 @@ const SkillChecklist = () => {
           jobDescription: state.jobDescription,
           resumeText: state.originalResume,
           selectedSkills: state.selectedSkills,
+          resumeMetadata: extractResumeMetadata(state.resumeJSON),
+          selectedBullets: extractSelectedBullets(state.resumeJSON),
         }),
       });
       

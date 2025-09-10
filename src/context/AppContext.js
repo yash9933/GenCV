@@ -2,6 +2,18 @@
 
 import { createContext, useContext, useReducer, useEffect } from 'react';
 
+// Global state to track last action timestamps
+let lastActionTimestamps = {
+  ADD_EXPERIENCE: null,
+  ADD_EDUCATION: null,
+  ADD_PROJECT: null
+};
+
+// Global flags to prevent duplicate dispatches
+let isAddingExperience = false;
+let isAddingEducation = false;
+let isAddingProject = false;
+
 // Initial state with new canonical JSON structure
 const initialState = {
   // Form data
@@ -299,9 +311,16 @@ function appReducer(state, action) {
       
     case ACTIONS.UPDATE_CERTIFICATIONS:
       const updatedCertResumeJSON = { ...state.resumeJSON };
-      // Filter out empty certifications
+      // Filter out empty certifications (support both string and object formats)
       const filteredCertifications = Array.isArray(action.payload) 
-        ? action.payload.filter(cert => cert.trim() !== '')
+        ? action.payload.filter(cert => {
+            if (typeof cert === 'string') {
+              return cert.trim() !== '';
+            } else if (typeof cert === 'object' && cert.name) {
+              return cert.name.trim() !== '';
+            }
+            return false;
+          })
         : action.payload;
       updatedCertResumeJSON.certifications = filteredCertifications;
       return { ...state, resumeJSON: updatedCertResumeJSON };
@@ -354,21 +373,27 @@ function appReducer(state, action) {
       return { ...state, resumeJSON: deletedEduResumeJSON };
       
     case ACTIONS.ADD_EXPERIENCE:
+      console.log('ADD_EXPERIENCE action called in reducer');
       const newExperience = action.payload;
       const addedExpResumeJSON = { ...state.resumeJSON };
       if (!addedExpResumeJSON.experience) {
         addedExpResumeJSON.experience = [];
       }
+      const beforeLength = addedExpResumeJSON.experience.length;
       addedExpResumeJSON.experience.push(newExperience);
+      console.log('ADD_EXPERIENCE: Before length:', beforeLength, 'After length:', addedExpResumeJSON.experience.length);
       return { ...state, resumeJSON: addedExpResumeJSON };
       
     case ACTIONS.ADD_EDUCATION:
+      console.log('ADD_EDUCATION action called in reducer');
       const newEducation = action.payload;
       const addedEduResumeJSON = { ...state.resumeJSON };
       if (!addedEduResumeJSON.education) {
         addedEduResumeJSON.education = [];
       }
+      const beforeEduLength = addedEduResumeJSON.education.length;
       addedEduResumeJSON.education.push(newEducation);
+      console.log('ADD_EDUCATION: Before length:', beforeEduLength, 'After length:', addedEduResumeJSON.education.length);
       return { ...state, resumeJSON: addedEduResumeJSON };
       
     // Project actions
@@ -406,12 +431,15 @@ function appReducer(state, action) {
       return { ...state, resumeJSON: deletedProjResumeJSON };
       
     case ACTIONS.ADD_PROJECT:
+      console.log('ADD_PROJECT action called in reducer');
       const newProject = action.payload;
       const addedProjResumeJSON = { ...state.resumeJSON };
       if (!addedProjResumeJSON.projects) {
         addedProjResumeJSON.projects = [];
       }
+      const beforeProjLength = addedProjResumeJSON.projects.length;
       addedProjResumeJSON.projects.push(newProject);
+      console.log('ADD_PROJECT: Before length:', beforeProjLength, 'After length:', addedProjResumeJSON.projects.length);
       return { ...state, resumeJSON: addedProjResumeJSON };
       
     // Bullet management actions for new schema
@@ -684,17 +712,35 @@ export function AppProvider({ children }) {
         payload: { deleteEduIndex: educationIndex }
       }),
       
-    addExperience: (newExperience) =>
+    addExperience: (newExperience) => {
+      const now = Date.now();
+      // Only allow one action per 1000ms to prevent duplicates
+      if (lastActionTimestamps.ADD_EXPERIENCE && (now - lastActionTimestamps.ADD_EXPERIENCE) < 1000) {
+        console.log('ADD_EXPERIENCE: Too soon after last action, ignoring');
+        return;
+      }
+      lastActionTimestamps.ADD_EXPERIENCE = now;
+      
       dispatch({
         type: ACTIONS.ADD_EXPERIENCE,
         payload: newExperience
-      }),
+      });
+    },
       
-    addEducation: (newEducation) =>
+    addEducation: (newEducation) => {
+      const now = Date.now();
+      // Only allow one action per 1000ms to prevent duplicates
+      if (lastActionTimestamps.ADD_EDUCATION && (now - lastActionTimestamps.ADD_EDUCATION) < 1000) {
+        console.log('ADD_EDUCATION: Too soon after last action, ignoring');
+        return;
+      }
+      lastActionTimestamps.ADD_EDUCATION = now;
+      
       dispatch({
         type: ACTIONS.ADD_EDUCATION,
         payload: newEducation
-      }),
+      });
+    },
       
     // Project action creators
     updateProject: (projectIndex, updatedProject) =>
@@ -715,11 +761,20 @@ export function AppProvider({ children }) {
         payload: { deleteProjIndex: projectIndex }
       }),
       
-    addProject: (newProject) =>
+    addProject: (newProject) => {
+      const now = Date.now();
+      // Only allow one action per 1000ms to prevent duplicates
+      if (lastActionTimestamps.ADD_PROJECT && (now - lastActionTimestamps.ADD_PROJECT) < 1000) {
+        console.log('ADD_PROJECT: Too soon after last action, ignoring');
+        return;
+      }
+      lastActionTimestamps.ADD_PROJECT = now;
+      
       dispatch({
         type: ACTIONS.ADD_PROJECT,
         payload: newProject
-      }),
+      });
+    },
       
     // Bullet management action creators for new schema
     toggleExperienceBullet: (expIndex, bulletIndex, enabled) =>

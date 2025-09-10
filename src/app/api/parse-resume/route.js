@@ -125,35 +125,131 @@ function extractTechTermsFromText(text) {
   if (!text || typeof text !== 'string') return [];
   
   const techTerms = new Set();
+  const lowerText = text.toLowerCase();
   
-  // Common technical terms and tools
+  // Comprehensive technical terms and tools with case-insensitive matching
   const techPatterns = [
     // Programming languages
-    /\b(JavaScript|TypeScript|Python|Java|C\+\+|C#|PHP|Ruby|Go|Rust|Swift|Kotlin|Scala|R|MATLAB)\b/gi,
+    /\b(javascript|typescript|python|java|c\+\+|c#|php|ruby|go|rust|swift|kotlin|scala|r|matlab|perl|bash|shell|powershell)\b/gi,
+    
+    // Java ecosystem
+    /\b(spring|spring mvc|spring boot|spring framework|hibernate|jpa|java persistence api|maven|gradle|junit|mockito|jvm|jdk|jre)\b/gi,
+    
     // Frameworks and libraries
-    /\b(React|Angular|Vue|Node\.js|Express|Django|Flask|Spring|Laravel|Rails|ASP\.NET|jQuery|Bootstrap|Tailwind)\b/gi,
+    /\b(react|angular|vue|vue\.js|node\.js|nodejs|express|django|flask|laravel|rails|asp\.net|jquery|bootstrap|tailwind|next\.js|nuxt\.js|svelte|ember)\b/gi,
+    
+    // JavaScript frameworks and libraries
+    /\b(javascript frameworks|js frameworks|react\.js|angular\.js|vue\.js|jquery|lodash|underscore|moment\.js|axios|fetch api)\b/gi,
+    
+    // Web development technologies
+    /\b(html|html5|css|css3|ajax|xml|json|rest|restful|graphql|websockets|webpack|babel|es6|es2015|es2016|es2017|es2018|es2019|es2020)\b/gi,
+    
+    // Modern web development concepts
+    /\b(single-page applications|spa|progressive web apps|pwa|responsive design|mobile web development|web components|micro frontends)\b/gi,
+    
+    // Programming paradigms and design patterns
+    /\b(object oriented programming|oop|object-oriented programming|design patterns|domain driven design|ddd|functional programming|fp|mvc|mvp|mvvm|microservices|soa)\b/gi,
+    
     // Databases
-    /\b(MySQL|PostgreSQL|MongoDB|Redis|Elasticsearch|Oracle|SQL Server|SQLite|DynamoDB|Cassandra)\b/gi,
-    // Cloud platforms
-    /\b(AWS|Azure|GCP|Google Cloud|Amazon Web Services|Microsoft Azure|Docker|Kubernetes|Terraform)\b/gi,
-    // Tools and methodologies
-    /\b(Git|GitHub|GitLab|Jenkins|CI\/CD|Agile|Scrum|DevOps|JIRA|Confluence|Slack|Teams|Figma|Photoshop)\b/gi,
+    /\b(mysql|postgresql|mongodb|redis|elasticsearch|oracle|sql server|sqlite|dynamodb|cassandra|neo4j|influxdb|couchdb|mariadb)\b/gi,
+    
+    // Cloud platforms and infrastructure
+    /\b(aws|amazon web services|azure|microsoft azure|gcp|google cloud|docker|kubernetes|terraform|ansible|chef|puppet|jenkins|gitlab ci|github actions)\b/gi,
+    
+    // Development tools and methodologies
+    /\b(git|github|gitlab|bitbucket|svn|mercurial|jira|confluence|slack|teams|figma|sketch|photoshop|illustrator|agile|scrum|kanban|devops|ci\/cd|continuous integration|continuous deployment)\b/gi,
+    
     // Data and analytics
-    /\b(Tableau|Power BI|Excel|SQL|NoSQL|Machine Learning|AI|Data Science|Analytics|ETL)\b/gi,
-    // Testing
-    /\b(Jest|Mocha|Cypress|Selenium|Unit Testing|Integration Testing|TDD|BDD)\b/gi
+    /\b(tableau|power bi|excel|sql|nosql|machine learning|ml|artificial intelligence|ai|data science|analytics|etl|data warehousing|business intelligence|bi)\b/gi,
+    
+    // Testing frameworks and methodologies
+    /\b(jest|mocha|chai|cypress|selenium|webdriver|unit testing|integration testing|end-to-end testing|e2e testing|tdd|test driven development|bdd|behavior driven development|qa|quality assurance)\b/gi,
+    
+    // Server-side development
+    /\b(server-side development|backend development|api development|web services|microservices|server applications|restful services|soap|grpc)\b/gi,
+    
+    // Mobile development
+    /\b(ios|android|react native|flutter|xamarin|cordova|phonegap|mobile development|hybrid apps|native apps)\b/gi,
+    
+    // Operating systems and environments
+    /\b(linux|unix|windows|macos|ubuntu|centos|debian|red hat|fedora|freebsd|openbsd)\b/gi,
+    
+    // Version control and collaboration
+    /\b(version control|source control|code review|pull request|merge request|branching|tagging|release management)\b/gi,
+    
+    // Performance and monitoring
+    /\b(performance optimization|caching|load balancing|monitoring|logging|debugging|profiling|apm|application performance monitoring)\b/gi
   ];
   
+  // Apply patterns to find matches
   techPatterns.forEach(pattern => {
     const matches = text.match(pattern);
     if (matches) {
       matches.forEach(match => {
-        techTerms.add(match.trim());
+        // Clean up the match and add to set
+        const cleanedMatch = match.trim();
+        if (cleanedMatch) {
+          techTerms.add(cleanedMatch);
+        }
       });
     }
   });
   
-  return Array.from(techTerms);
+  // Additional specific term extraction for common variations
+  const specificTerms = [
+    // Server-side development variations
+    { pattern: /server[-\s]?side\s+development/gi, term: 'Server-side development' },
+    { pattern: /backend\s+development/gi, term: 'Backend development' },
+    { pattern: /server\s+applications?/gi, term: 'Server applications' },
+    
+    // Java ecosystem specific
+    { pattern: /spring\s+mvc/gi, term: 'Spring MVC' },
+    { pattern: /java\s+persistence\s+api/gi, term: 'JPA' },
+    { pattern: /object[-\s]?oriented\s+programming/gi, term: 'Object-Oriented Programming (OOP)' },
+    { pattern: /design\s+patterns/gi, term: 'Design patterns' },
+    { pattern: /domain[-\s]?driven\s+design/gi, term: 'Domain-Driven Design (DDD)' },
+    
+    // Web development specific
+    { pattern: /javascript\s+frameworks?/gi, term: 'JavaScript frameworks' },
+    { pattern: /modern\s+web\s+development/gi, term: 'Modern web development' },
+    { pattern: /single[-\s]?page\s+applications?/gi, term: 'Single-page applications' },
+    { pattern: /mobile\s+web\s+development/gi, term: 'Mobile web development' },
+    { pattern: /html5/gi, term: 'HTML5' },
+    { pattern: /css3/gi, term: 'CSS3' },
+    { pattern: /ajax/gi, term: 'AJAX' },
+    
+    // Leadership and management
+    { pattern: /technical\s+leadership/gi, term: 'Technical leadership' },
+    { pattern: /team\s+leadership/gi, term: 'Team leadership' },
+    { pattern: /mentoring/gi, term: 'Mentoring' },
+    { pattern: /remote\s+team\s+management/gi, term: 'Remote team management' },
+    { pattern: /distributed\s+team\s+management/gi, term: 'Distributed team management' }
+  ];
+  
+  // Remove duplicates and normalize case
+  const normalizeAndDeduplicate = (terms) => {
+    const normalized = new Set();
+    const seen = new Set();
+    
+    terms.forEach(term => {
+      const lower = term.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        normalized.add(term);
+      }
+    });
+    
+    return Array.from(normalized);
+  };
+  
+  specificTerms.forEach(({ pattern, term }) => {
+    if (pattern.test(text)) {
+      techTerms.add(term);
+    }
+  });
+  
+  // Apply deduplication and return sorted results
+  return normalizeAndDeduplicate(Array.from(techTerms)).sort();
 }
 
 // Map arbitrary/variant technical skill headers to canonical keys and prune extras

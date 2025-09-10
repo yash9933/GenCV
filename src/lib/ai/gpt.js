@@ -21,7 +21,7 @@ class GPTClient {
    * @param {Object} params - Generation parameters
    * @returns {Promise<Object>} - Generated content
    */
-  async generateResumeContent({ jobDescription, resumeText, selectedSkills }) {
+  async generateResumeContent({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
     try {
       const prompt = `You are an expert resume writer. Based on the job description and resume text provided, generate 3-5 compelling bullet points for each selected skill that would be relevant for this position.
 

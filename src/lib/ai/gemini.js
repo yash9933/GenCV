@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
@@ -134,8 +133,8 @@ class GeminiClient {
    * @param {string[]} params.selectedSkills - Selected skills to generate bullets for
    * @returns {Promise<Object>} - Generated bullet points and cover letter
    */
-  async generateBulletPoints({ jobDescription, resumeText, selectedSkills }) {
-    const prompt = this.buildBulletPrompt({ jobDescription, resumeText, selectedSkills });
+  async generateBulletPoints({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
+    const prompt = this.buildBulletPrompt({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets });
 
     try {
       const response = await this.generateContent(prompt);
@@ -195,19 +194,62 @@ class GeminiClient {
    * @param {Object} params - Parameters for prompt building
    * @returns {string} - Formatted prompt
    */
-  buildBulletPrompt({ jobDescription, resumeText, selectedSkills }) {
-    return `You are an expert technical recruiter and resume coach.
+  buildBulletPrompt({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
+    return `⚡ Engineered Prompt for Cover Letter Generation
+You are an expert technical recruiter and career coach. 
+Generate a professional, human-like, non-generic cover letter for a job application.
+
+Inputs:
+1. Job description text.
+2. Candidate's resume metadata (name, title, company, years of experience).
+3. Final selected resume bullets (only those toggled ON by the user).
+
+Rules:
+- Structure: 
+  1. Header (Candidate info + Company info placeholders).
+  2. Greeting (e.g., "Dear Hiring Manager,").
+  3. Opening paragraph: engaging introduction, express enthusiasm, briefly tie background to JD.
+  4. Body paragraphs: highlight **2–3 strongest skills/achievements** drawn from selected resume bullets, aligned to JD. 
+     - Avoid re-listing entire resume; instead, reframe bullets into a compelling narrative.
+     - Showcase impact with STAR method (Situation, Task, Action, Result).
+  5. Closing paragraph: reinforce enthusiasm, show cultural fit, call to action ("I'd welcome the chance to discuss further").
+  6. Professional sign-off.
+
+- Tone: 
+  - Engaging but professional. 
+  - Not robotic, not keyword-stuffed, not a rehash of resume. 
+  - Show personality and motivation while staying concise and businesslike.
+  - Balance confidence with humility (avoid "I am the best").
+  - ATS-friendly: include job title + company naturally.
+  - NEVER include phrases like "as advertised on [Platform]" or similar platform references.
+
+- Length: 3–4 paragraphs, total 200–280 words.
+- Be concise and impactful - every sentence should add value.
+- Use varied sentence structures (avoid repetitive phrasing).
+- Integrate 1–2 realistic metrics/numbers where appropriate (from bullets), but don't overdo it.
+- Avoid clichés ("fast learner", "passionate about technology"), instead use evidence-based strengths.
+- Maintain consistent tense, first person voice ("I" statements are okay in cover letters, unlike resumes).
+- Format: Include proper spacing with \n\n\n before "Sincerely," signature line.
 
 INPUTS:
 - JOB DESCRIPTION (JD):
 ${jobDescription}
-- SELECTED SKILLS:
+
+- CANDIDATE METADATA:
+${resumeMetadata ? JSON.stringify(resumeMetadata, null, 2) : 'Not provided'}
+
+- SELECTED RESUME BULLETS (use these for cover letter content):
+${selectedBullets ? selectedBullets.map(bullet => `• ${bullet}`).join('\n') : 'Not provided'}
+
+- SELECTED SKILLS (for bullet generation):
 ${selectedSkills.join(', ')}
 
 TASK:
-Generate NEW resume bullet points based ONLY on the JD and the selected skills (do not reuse the candidate's original resume text). Bullets should slot naturally into an experience section without naming the company.
+1. Generate NEW resume bullet points based ONLY on the JD and the selected skills (do not reuse the candidate's original resume text). Bullets should slot naturally into an experience section without naming the company.
 
-GENERATION RULES:
+2. Generate a professional cover letter using the engineered prompt above, incorporating the selected resume bullets and candidate metadata.
+
+GENERATION RULES FOR BULLETS:
 - STAR: Each bullet should imply Situation/Task, Action, Result in one concise sentence.
 - Each bullet must showcase exactly ONE selected skill.
 - Up to 2 bullets per skill with different angles (technical depth vs. impact/outcome). It's okay if both include both aspects.
@@ -231,10 +273,10 @@ OUTPUT JSON FORMAT:
       ]
     }
   ],
-  "coverLetter": "A concise cover letter paragraph tying experience to the JD (optional)"
+  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 200-280 words, 3-4 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
 }
 
-EXAMPLES (style and specificity):
+EXAMPLES (bullet style and specificity):
 - Improved Jenkins-based CI/CD pipeline, cutting deployment time by 50% and enabling confident, faster developer releases.
 - Set up Prometheus and Grafana monitoring, sustaining 99.9% uptime and surfacing production issues before user impact.
 - Re-architected a Go microservice to Python FastAPI with typed clients and retries, reducing cloud spend 15% while simplifying on-call with clearer observability.

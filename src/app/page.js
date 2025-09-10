@@ -165,17 +165,14 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-white shadow-sm border-b flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={handleBackToHome}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
-              >
-                ← Back to Home
-              </button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 
+                  onClick={handleBackToHome}
+                  className="text-xl font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                >
                   AI Resume Builder
                 </h1>
                 <p className="text-sm text-gray-600">
@@ -241,7 +238,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 py-4 px-4">
+      <main className="flex-1 py-2 px-12 mx-8">
         {renderCurrentStep()}
       </main>
 

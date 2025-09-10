@@ -51,7 +51,7 @@ export async function POST(request) {
     
     // Parse request body
     const body = await request.json();
-    const { jobDescription, resumeText, selectedSkills } = body;
+    const { jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets } = body;
 
     // Validate inputs
     if (!jobDescription || !resumeText || !selectedSkills) {
@@ -103,7 +103,9 @@ export async function POST(request) {
         {
           jobDescription,
           resumeText,
-          selectedSkills
+          selectedSkills,
+          resumeMetadata,
+          selectedBullets
         }
       );
       console.log('API: generateBulletPoints completed successfully');
