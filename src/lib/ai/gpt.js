@@ -45,7 +45,7 @@ COVER LETTER GENERATION RULES:
   1. Header (Candidate info + Company info placeholders).
   2. Greeting (e.g., "Dear Hiring Manager,").
   3. Opening paragraph: engaging introduction, express enthusiasm, briefly tie background to JD.
-  4. Body paragraphs: highlight **2–3 strongest skills/achievements** drawn from selected resume bullets, aligned to JD. 
+  4. Body paragraphs: highlight **2–3 strongest skills/achievements** derived from the generated bullets and aligned to the JD.
      - Avoid re-listing entire resume; instead, reframe bullets into a compelling narrative.
      - Showcase impact with STAR method (Situation, Task, Action, Result).
   5. Closing paragraph: reinforce enthusiasm, show cultural fit, call to action ("I'd welcome the chance to discuss further").
@@ -67,12 +67,6 @@ COVER LETTER GENERATION RULES:
 Job Description:
 ${jobDescription}
 
-Candidate Metadata:
-${resumeMetadata ? JSON.stringify(resumeMetadata, null, 2) : 'Not provided'}
-
-Selected Resume Bullets (use these for cover letter content):
-${selectedBullets ? selectedBullets.map(bullet => `• ${bullet}`).join('\n') : 'Not provided'}
-
 Selected Skills (for bullet generation):
 ${selectedSkills.join(', ')}
 
@@ -87,7 +81,7 @@ Format the response as a JSON object with this structure:
       ]
     }
   ],
-  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
+  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating the generated bullets and aligning strictly to the job description and selected skills. Do not use any resume content.]\n\n\n\nSincerely,\n[First Last Name]"
 }
 
 Ensure the JSON is valid and properly formatted.`;

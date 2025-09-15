@@ -133,8 +133,8 @@ class GeminiClient {
    * @param {string[]} params.selectedSkills - Selected skills to generate bullets for
    * @returns {Promise<Object>} - Generated bullet points and cover letter
    */
-  async generateBulletPoints({ jobDescription, selectedSkills, resumeMetadata, selectedBullets }) {
-    const prompt = this.buildBulletPrompt({ jobDescription, selectedSkills, resumeMetadata, selectedBullets });
+  async generateBulletPoints({ jobDescription, selectedSkills }) {
+    const prompt = this.buildBulletPrompt({ jobDescription, selectedSkills });
 
     try {
       const response = await this.generateContent(prompt);
@@ -194,7 +194,7 @@ class GeminiClient {
    * @param {Object} params - Parameters for prompt building
    * @returns {string} - Formatted prompt
    */
-  buildBulletPrompt({ jobDescription, selectedSkills, resumeMetadata, selectedBullets }) {
+  buildBulletPrompt({ jobDescription, selectedSkills }) {
     return `You are an expert technical recruiter and career coach. 
 Your task is to generate resume bullet points and a cover letter for a candidate.
 
@@ -217,7 +217,7 @@ COVER LETTER GENERATION RULES:
   1. Header (Candidate info + Company info placeholders).
   2. Greeting (e.g., "Dear Hiring Manager,").
   3. Opening paragraph: engaging introduction, express enthusiasm, briefly tie background to JD.
-  4. Body paragraphs: highlight **2–3 strongest skills/achievements** drawn from selected resume bullets, aligned to JD. 
+  4. Body paragraphs: highlight **2–3 strongest skills/achievements** derived from the generated bullets and aligned to the JD.
      - Avoid re-listing entire resume; instead, reframe bullets into a compelling narrative.
      - Showcase impact with STAR method (Situation, Task, Action, Result).
   5. Closing paragraph: reinforce enthusiasm, show cultural fit, call to action ("I'd welcome the chance to discuss further").
@@ -240,12 +240,6 @@ INPUTS:
 - JOB DESCRIPTION:
 ${jobDescription}
 
-- CANDIDATE METADATA:
-${resumeMetadata ? JSON.stringify(resumeMetadata, null, 2) : 'Not provided'}
-
-- SELECTED RESUME BULLETS (use these for cover letter content):
-${selectedBullets ? selectedBullets.map(bullet => `• ${bullet}`).join('\n') : 'Not provided'}
-
 - SELECTED SKILLS (for bullet generation):
 ${selectedSkills.join(', ')}
 
@@ -260,7 +254,7 @@ OUTPUT JSON FORMAT:
       ]
     }
   ],
-  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
+  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating the generated bullets and aligning strictly to the job description and selected skills. Do not use any resume content.]\n\n\n\nSincerely,\n[First Last Name]"
 }
 
 Return ONLY valid JSON.`;
