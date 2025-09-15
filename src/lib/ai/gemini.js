@@ -133,8 +133,8 @@ class GeminiClient {
    * @param {string[]} params.selectedSkills - Selected skills to generate bullets for
    * @returns {Promise<Object>} - Generated bullet points and cover letter
    */
-  async generateBulletPoints({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
-    const prompt = this.buildBulletPrompt({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets });
+  async generateBulletPoints({ jobDescription, selectedSkills, resumeMetadata, selectedBullets }) {
+    const prompt = this.buildBulletPrompt({ jobDescription, selectedSkills, resumeMetadata, selectedBullets });
 
     try {
       const response = await this.generateContent(prompt);
@@ -194,17 +194,25 @@ class GeminiClient {
    * @param {Object} params - Parameters for prompt building
    * @returns {string} - Formatted prompt
    */
-  buildBulletPrompt({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
-    return `⚡ Engineered Prompt for Cover Letter Generation
-You are an expert technical recruiter and career coach. 
-Generate a professional, human-like, non-generic cover letter for a job application.
+  buildBulletPrompt({ jobDescription, selectedSkills, resumeMetadata, selectedBullets }) {
+    return `You are an expert technical recruiter and career coach. 
+Your task is to generate resume bullet points and a cover letter for a candidate.
 
-Inputs:
-1. Job description text.
-2. Candidate's resume metadata (name, title, company, years of experience).
-3. Final selected resume bullets (only those toggled ON by the user).
+TASK 1: Generate NEW resume bullet points based ONLY on the job description and selected skills (do not reuse the candidate's original resume text).
 
-Rules:
+BULLET GENERATION RULES:
+- Each bullet must showcase one selected skill.
+- Do not reuse or reword text from the candidate's resume.
+- Follow STAR: Situation/Task, Action, Result in one concise sentence.
+- Each bullet: 12–20 words, strong action verbs, professional tone.
+- 30–50% of bullets should include realistic metrics (time saved, %, $, users). Others should focus on scope or collaboration.
+- Generate up to 2 bullets per skill (different angles).
+- Keep ATS-friendly: naturally include JD keywords, but don't keyword stuff.
+- No "I"/"we", no fluff, no buzzwords like "synergy".
+
+TASK 2: Generate a professional cover letter using the engineered prompt below.
+
+COVER LETTER GENERATION RULES:
 - Structure: 
   1. Header (Candidate info + Company info placeholders).
   2. Greeting (e.g., "Dear Hiring Manager,").
@@ -221,18 +229,15 @@ Rules:
   - Show personality and motivation while staying concise and businesslike.
   - Balance confidence with humility (avoid "I am the best").
   - ATS-friendly: include job title + company naturally.
-  - NEVER include phrases like "as advertised on [Platform]" or similar platform references.
 
-- Length: 3–4 paragraphs, total 200–280 words.
-- Be concise and impactful - every sentence should add value.
+- Length: 3–5 paragraphs, total 250–350 words.
 - Use varied sentence structures (avoid repetitive phrasing).
 - Integrate 1–2 realistic metrics/numbers where appropriate (from bullets), but don't overdo it.
 - Avoid clichés ("fast learner", "passionate about technology"), instead use evidence-based strengths.
 - Maintain consistent tense, first person voice ("I" statements are okay in cover letters, unlike resumes).
-- Format: Include proper spacing with \n\n\n before "Sincerely," signature line.
 
 INPUTS:
-- JOB DESCRIPTION (JD):
+- JOB DESCRIPTION:
 ${jobDescription}
 
 - CANDIDATE METADATA:
@@ -243,24 +248,6 @@ ${selectedBullets ? selectedBullets.map(bullet => `• ${bullet}`).join('\n') : 
 
 - SELECTED SKILLS (for bullet generation):
 ${selectedSkills.join(', ')}
-
-TASK:
-1. Generate NEW resume bullet points based ONLY on the JD and the selected skills (do not reuse the candidate's original resume text). Bullets should slot naturally into an experience section without naming the company.
-
-2. Generate a professional cover letter using the engineered prompt above, incorporating the selected resume bullets and candidate metadata.
-
-GENERATION RULES FOR BULLETS:
-- STAR: Each bullet should imply Situation/Task, Action, Result in one concise sentence.
-- Each bullet must showcase exactly ONE selected skill.
-- Up to 2 bullets per skill with different angles (technical depth vs. impact/outcome). It's okay if both include both aspects.
-- Length: 15–22 words (never below 15 words).
-- Language: Strong action verbs; professional tone; no first-person pronouns; avoid buzzwords (e.g., synergy, cutting-edge).
-- ATS-friendly: Include JD keywords naturally; do not keyword-stuff.
-- Metrics: Only ~30–50% of bullets include realistic metrics (%, $, time, users). Others emphasize scope, collaboration, or improvements without numbers.
-- Do NOT append phrases like "at <Company>" or company names at the end of bullets.
- - Prefer CONCRETE specifics over vague language. Name relevant tools/services/frameworks from the JD when appropriate (e.g., Jenkins, GitHub Actions, Kubernetes, Terraform, AWS, Prometheus, Grafana, Datadog, New Relic, Snowflake, Kafka).
- - Structure each bullet like: Action + specific tool/approach + how it was done + measurable or qualitative outcome.
- - Avoid generic wording like "improved systems" without specifying what was improved and how.
 
 OUTPUT JSON FORMAT:
 {
@@ -273,14 +260,8 @@ OUTPUT JSON FORMAT:
       ]
     }
   ],
-  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 200-280 words, 3-4 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
+  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
 }
-
-EXAMPLES (bullet style and specificity):
-- Improved Jenkins-based CI/CD pipeline, cutting deployment time by 50% and enabling confident, faster developer releases.
-- Set up Prometheus and Grafana monitoring, sustaining 99.9% uptime and surfacing production issues before user impact.
-- Re-architected a Go microservice to Python FastAPI with typed clients and retries, reducing cloud spend 15% while simplifying on-call with clearer observability.
-- Implemented Flask APIs with Celery and Redis queues to decouple partner ops, lowering order sync latency 35% and reducing manual exceptions.
 
 Return ONLY valid JSON.`;
   }

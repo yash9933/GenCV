@@ -47,17 +47,17 @@ function transformGPTFormatToLegacy(gptResponse, selectedSkills) {
  */
 export async function POST(request) {
   try {
-    console.log('API: Starting AI bullet generation request...');
+    console.log('API: Starting AI bullet and cover letter generation request...');
     
     // Parse request body
     const body = await request.json();
-    const { jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets } = body;
+    const { jobDescription, selectedSkills, resumeMetadata, selectedBullets } = body;
 
     // Validate inputs
-    if (!jobDescription || !resumeText || !selectedSkills) {
+    if (!jobDescription || !selectedSkills) {
       console.error('API: Missing required fields in request');
       return NextResponse.json(
-        { error: 'Missing required fields: jobDescription, resumeText, selectedSkills' },
+        { error: 'Missing required fields: jobDescription, selectedSkills' },
         { status: 400 }
       );
     }
@@ -89,12 +89,12 @@ export async function POST(request) {
     // Choose AI provider - prefer GPT if available, otherwise use Gemini
     let aiProvider = availableProviders.includes('gpt') ? 'gpt' : 'gemini';
     
-    console.log(`API: Using ${aiProvider.toUpperCase()} AI provider for bullet generation`);
+    console.log(`API: Using ${aiProvider.toUpperCase()} AI provider for bullet and cover letter generation`);
 
     // Generate enhanced content (bullets and cover letter)
     console.log('API: Generating AI bullets and cover letter...');
     console.log('API: Calling generateBulletPoints with provider:', aiProvider);
-    console.log('API: Parameters:', { jobDescription: jobDescription?.length, resumeText: resumeText?.length, selectedSkills });
+    console.log('API: Parameters:', { jobDescription: jobDescription?.length, selectedSkills, resumeMetadata: !!resumeMetadata, selectedBullets: selectedBullets?.length });
     
     let generatedContent;
     try {
@@ -102,7 +102,6 @@ export async function POST(request) {
         aiProvider,
         {
           jobDescription,
-          resumeText,
           selectedSkills,
           resumeMetadata,
           selectedBullets
@@ -128,7 +127,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('API: Error in bullet generation:', error);
+    console.error('API: Error in bullet and cover letter generation:', error);
     
     // Return appropriate error response
     return NextResponse.json(

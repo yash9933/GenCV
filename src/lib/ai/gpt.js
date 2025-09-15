@@ -21,25 +21,60 @@ class GPTClient {
    * @param {Object} params - Generation parameters
    * @returns {Promise<Object>} - Generated content
    */
-  async generateResumeContent({ jobDescription, resumeText, selectedSkills, resumeMetadata, selectedBullets }) {
+  async generateResumeContent({ jobDescription, selectedSkills, resumeMetadata, selectedBullets }) {
     try {
-      const prompt = `You are an expert resume writer. Based on the job description and resume text provided, generate 3-5 compelling bullet points for each selected skill that would be relevant for this position.
+      const prompt = `You are an expert technical recruiter and career coach. 
+Your task is to generate resume bullet points and a cover letter for a candidate.
+
+TASK 1: Generate NEW resume bullet points based ONLY on the job description and selected skills (do not reuse the candidate's original resume text).
+
+BULLET GENERATION RULES:
+- Each bullet must showcase one selected skill.
+- Do not reuse or reword text from the candidate's resume.
+- Follow STAR: Situation/Task, Action, Result in one concise sentence.
+- Each bullet: 12–20 words, strong action verbs, professional tone.
+- 30–50% of bullets should include realistic metrics (time saved, %, $, users). Others should focus on scope or collaboration.
+- Generate up to 2 bullets per skill (different angles).
+- Keep ATS-friendly: naturally include JD keywords, but don't keyword stuff.
+- No "I"/"we", no fluff, no buzzwords like "synergy".
+
+TASK 2: Generate a professional cover letter using the engineered prompt below.
+
+COVER LETTER GENERATION RULES:
+- Structure: 
+  1. Header (Candidate info + Company info placeholders).
+  2. Greeting (e.g., "Dear Hiring Manager,").
+  3. Opening paragraph: engaging introduction, express enthusiasm, briefly tie background to JD.
+  4. Body paragraphs: highlight **2–3 strongest skills/achievements** drawn from selected resume bullets, aligned to JD. 
+     - Avoid re-listing entire resume; instead, reframe bullets into a compelling narrative.
+     - Showcase impact with STAR method (Situation, Task, Action, Result).
+  5. Closing paragraph: reinforce enthusiasm, show cultural fit, call to action ("I'd welcome the chance to discuss further").
+  6. Professional sign-off.
+
+- Tone: 
+  - Engaging but professional. 
+  - Not robotic, not keyword-stuffed, not a rehash of resume. 
+  - Show personality and motivation while staying concise and businesslike.
+  - Balance confidence with humility (avoid "I am the best").
+  - ATS-friendly: include job title + company naturally.
+
+- Length: 3–5 paragraphs, total 250–350 words.
+- Use varied sentence structures (avoid repetitive phrasing).
+- Integrate 1–2 realistic metrics/numbers where appropriate (from bullets), but don't overdo it.
+- Avoid clichés ("fast learner", "passionate about technology"), instead use evidence-based strengths.
+- Maintain consistent tense, first person voice ("I" statements are okay in cover letters, unlike resumes).
 
 Job Description:
 ${jobDescription}
 
-Resume Text:
-${resumeText}
+Candidate Metadata:
+${resumeMetadata ? JSON.stringify(resumeMetadata, null, 2) : 'Not provided'}
 
-Selected Skills to generate bullets for:
+Selected Resume Bullets (use these for cover letter content):
+${selectedBullets ? selectedBullets.map(bullet => `• ${bullet}`).join('\n') : 'Not provided'}
+
+Selected Skills (for bullet generation):
 ${selectedSkills.join(', ')}
-
-Generate bullet points that:
-1. Are specific and quantifiable when possible
-2. Use strong action verbs
-3. Highlight relevant achievements
-4. Match the job requirements
-5. Are ATS-friendly
 
 Format the response as a JSON object with this structure:
 {
@@ -48,12 +83,11 @@ Format the response as a JSON object with this structure:
       "skill": "skill_name",
       "bullets": [
         "bullet point 1",
-        "bullet point 2",
-        "bullet point 3"
+        "bullet point 2"
       ]
     }
   ],
-  "coverLetter": "A compelling cover letter paragraph that ties the candidate's experience to the job requirements"
+  "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating selected bullets and candidate metadata]\n\n\n\nSincerely,\n[First Last Name]"
 }
 
 Ensure the JSON is valid and properly formatted.`;
