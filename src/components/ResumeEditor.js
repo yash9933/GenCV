@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { downloadPDF, copyToClipboard, downloadFile } from '../lib/utils';
+import { downloadPDF, copyToClipboard, downloadFile, generateCoverLetterPDF } from '../lib/utils';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import Textarea from './ui/Textarea';
@@ -372,24 +372,11 @@ const ResumeEditor = () => {
   const { resumeJSON } = state;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [isEditingCoverLetter, setIsEditingCoverLetter] = useState(false);
-  const [editedCoverLetter, setEditedCoverLetter] = useState('');
-
-  // Cover letter editing functions
-  const handleEditCoverLetter = () => {
-    setEditedCoverLetter(state.coverLetter || '');
-    setIsEditingCoverLetter(true);
-  };
-
-  const handleSaveCoverLetter = () => {
-    actions.setCoverLetter(editedCoverLetter);
-    setIsEditingCoverLetter(false);
-    toast.success('Cover letter updated successfully');
-  };
-
-  const handleCancelEditCoverLetter = () => {
-    setEditedCoverLetter(state.coverLetter || '');
-    setIsEditingCoverLetter(false);
+  const [isGeneratingCoverLetterPDF, setIsGeneratingCoverLetterPDF] = useState(false);
+  
+  // Cover letter editing function
+  const handleCoverLetterChange = (e) => {
+    actions.setCoverLetter(e.target.value);
   };
 
   const sensors = useSensors(
@@ -819,81 +806,63 @@ const ResumeEditor = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
               <div className="flex space-x-2">
-                {isEditingCoverLetter ? (
-                  <>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleSaveCoverLetter}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleCancelEditCoverLetter}
-                    >
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleEditCoverLetter}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        if (!state.coverLetter.trim()) {
-                          toast.error('No cover letter to copy');
-                          return;
-                        }
-                        const success = await copyToClipboard(state.coverLetter);
-                        if (success) {
-                          toast.success('Cover letter copied to clipboard');
-                        } else {
-                          toast.error('Failed to copy to clipboard');
-                        }
-                      }}
-                    >
-                      Copy
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => {
-                        if (!state.coverLetter.trim()) {
-                          toast.error('No cover letter to download');
-                          return;
-                        }
-                        downloadFile(state.coverLetter, 'cover-letter.pdf', 'application/pdf');
-                        toast.success('Cover letter downloaded as PDF');
-                      }}
-                    >
-                      Download PDF
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!state.coverLetter.trim()) {
+                      toast.error('No cover letter to copy');
+                      return;
+                    }
+                    const success = await copyToClipboard(state.coverLetter);
+                    if (success) {
+                      toast.success('Cover letter copied to clipboard');
+                    } else {
+                      toast.error('Failed to copy to clipboard');
+                    }
+                  }}
+                >
+                  Copy
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={isGeneratingCoverLetterPDF}
+                  onClick={async () => {
+                    if (!state.coverLetter.trim()) {
+                      toast.error('No cover letter to download');
+                      return;
+                    }
+                    setIsGeneratingCoverLetterPDF(true);
+                    try {
+                      const pdfBlob = await generateCoverLetterPDF(state.coverLetter);
+                      downloadFile(pdfBlob, 'cover-letter.pdf', 'application/pdf');
+                      toast.success('Cover letter downloaded as PDF');
+                    } catch (error) {
+                      console.error('Error generating cover letter PDF:', error);
+                      toast.error('Failed to generate PDF');
+                    } finally {
+                      setIsGeneratingCoverLetterPDF(false);
+                    }
+                  }}
+                >
+                  {isGeneratingCoverLetterPDF ? 'Generating...' : 'Download PDF'}
+                </Button>
               </div>
             </div>
             
             <div className="bg-gray-50 rounded-lg p-4">
               <Textarea
-                value={isEditingCoverLetter ? editedCoverLetter : state.coverLetter}
-                onChange={isEditingCoverLetter ? (e) => setEditedCoverLetter(e.target.value) : () => {}}
+                value={state.coverLetter}
+                onChange={handleCoverLetterChange}
                 rows={12}
-                disabled={!isEditingCoverLetter}
-                className={`${isEditingCoverLetter ? 'bg-white border border-gray-300' : 'bg-white border-0'} resize-none`}
+                className="bg-white border border-gray-300 resize-none"
+                placeholder="Your cover letter will appear here..."
               />
             </div>
             
             <div className="mt-3 text-center text-sm text-gray-600">
-              <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills.</p>
+              <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills. You can edit it directly above.</p>
             </div>
           </div>
         </div>
@@ -1045,81 +1014,63 @@ const ResumeEditor = () => {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
             <div className="flex space-x-2">
-              {isEditingCoverLetter ? (
-                <>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSaveCoverLetter}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCancelEditCoverLetter}
-                  >
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEditCoverLetter}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      if (!state.coverLetter.trim()) {
-                        toast.error('No cover letter to copy');
-                        return;
-                      }
-                      const success = await copyToClipboard(state.coverLetter);
-                      if (success) {
-                        toast.success('Cover letter copied to clipboard');
-                      } else {
-                        toast.error('Failed to copy to clipboard');
-                      }
-                    }}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      if (!state.coverLetter.trim()) {
-                        toast.error('No cover letter to download');
-                        return;
-                      }
-                      downloadFile(state.coverLetter, 'cover-letter.pdf', 'application/pdf');
-                      toast.success('Cover letter downloaded as PDF');
-                    }}
-                  >
-                    Download PDF
-                  </Button>
-                </>
-              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  if (!state.coverLetter.trim()) {
+                    toast.error('No cover letter to copy');
+                    return;
+                  }
+                  const success = await copyToClipboard(state.coverLetter);
+                  if (success) {
+                    toast.success('Cover letter copied to clipboard');
+                  } else {
+                    toast.error('Failed to copy to clipboard');
+                  }
+                }}
+              >
+                Copy
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={isGeneratingCoverLetterPDF}
+                onClick={async () => {
+                  if (!state.coverLetter.trim()) {
+                    toast.error('No cover letter to download');
+                    return;
+                  }
+                  setIsGeneratingCoverLetterPDF(true);
+                  try {
+                    const pdfBlob = await generateCoverLetterPDF(state.coverLetter);
+                    downloadFile(pdfBlob, 'cover-letter.pdf', 'application/pdf');
+                    toast.success('Cover letter downloaded as PDF');
+                  } catch (error) {
+                    console.error('Error generating cover letter PDF:', error);
+                    toast.error('Failed to generate PDF');
+                  } finally {
+                    setIsGeneratingCoverLetterPDF(false);
+                  }
+                }}
+              >
+                {isGeneratingCoverLetterPDF ? 'Generating...' : 'Download PDF'}
+              </Button>
             </div>
           </div>
           
           <div className="bg-gray-50 rounded-lg p-4">
             <Textarea
-              value={isEditingCoverLetter ? editedCoverLetter : state.coverLetter}
-              onChange={isEditingCoverLetter ? (e) => setEditedCoverLetter(e.target.value) : () => {}}
+              value={state.coverLetter}
+              onChange={handleCoverLetterChange}
               rows={12}
-              disabled={!isEditingCoverLetter}
-              className={`${isEditingCoverLetter ? 'bg-white border border-gray-300' : 'bg-white border-0'} resize-none`}
+              className="bg-white border border-gray-300 resize-none"
+              placeholder="Your cover letter will appear here..."
             />
           </div>
           
           <div className="mt-3 text-center text-sm text-gray-600">
-            <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills.</p>
+            <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills. You can edit it directly above.</p>
           </div>
         </div>
       </div>

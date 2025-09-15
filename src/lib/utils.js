@@ -47,6 +47,55 @@ export const downloadFile = (content, filename, mimeType) => {
   URL.revokeObjectURL(url);
 };
 
+/**
+ * Generate cover letter PDF using React-PDF
+ */
+export const generateCoverLetterPDF = async (coverLetterText) => {
+  try {
+    console.log('Starting cover letter PDF generation...');
+    
+    // Dynamic imports to avoid caching issues
+    const { pdf, Document, Page, Text, StyleSheet } = await import('@react-pdf/renderer');
+    console.log('React-PDF imported successfully for cover letter');
+    
+    const styles = StyleSheet.create({
+      page: {
+        padding: 40,
+        fontSize: 12,
+        lineHeight: 1.5,
+        fontFamily: 'Helvetica',
+      },
+      paragraph: {
+        marginBottom: 15,
+        textAlign: 'justify',
+      }
+    });
+
+    // Split the cover letter into paragraphs
+    const paragraphs = coverLetterText.split('\n\n').filter(p => p.trim());
+    
+    const CoverLetterDocument = () => (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          {paragraphs.map((paragraph, index) => (
+            <Text key={index} style={styles.paragraph}>
+              {paragraph.trim()}
+            </Text>
+          ))}
+        </Page>
+      </Document>
+    );
+
+    const pdfBlob = await pdf(CoverLetterDocument()).toBlob();
+    console.log('Cover letter PDF generated successfully');
+    return pdfBlob;
+    
+  } catch (error) {
+    console.error('Error generating cover letter PDF:', error);
+    throw error;
+  }
+};
+
 export const extractSkillsFromJD = (jobDescription) => {
   const commonSkills = [
     'JavaScript', 'Python', 'Java', 'React', 'Node.js', 'SQL', 'AWS', 'Docker',
