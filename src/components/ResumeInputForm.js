@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import { parsePDF, extractSkillsFromJD, extractResumeToJSON } from '../lib/utils';
 import Button from './ui/Button';
 import Textarea from './ui/Textarea';
+import LoadingPopup from './LoadingPopup';
 import toast from 'react-hot-toast';
 
 /**
@@ -50,7 +51,7 @@ const ResumeInputForm = () => {
   };
 
   /**
-   * Handle form submission
+   * Handle form submission - now includes resume parsing and skill extraction
    */
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -65,25 +66,88 @@ const ResumeInputForm = () => {
       return;
     }
 
+    actions.setGenerating(true);
+    actions.setError(null);
+
     try {
-      console.log('Extracting skills from job description...');
+      console.log('=== STARTING EXTRACT SKILLS ===');
+      console.log('Function called successfully!');
+      console.log('Current state:', {
+        jobDescription: state.jobDescription,
+        originalResume: state.originalResume,
+        hasJobDescription: !!state.jobDescription,
+        hasResumeText: !!state.originalResume,
+        resumeTextLength: state.originalResume?.length || 0
+      });
       
-      // Extract skills from job description (no AI call here)
-      const skills = extractSkillsFromJD(state.jobDescription);
-      actions.setSuggestedSkills(skills);
+      console.log('Extracting skills from resume and job description...');
+      console.log('Making API call to /api/parse-resume...');
       
-      // Set all skills as selected by default
-      actions.setSelectedSkills(skills);
+      const requestBody = {
+        jobDescription: state.jobDescription,
+        resumeText: state.originalResume,
+      };
       
-      // Move to skills selection step (resume parsing will happen later)
+      console.log('Request body:', requestBody);
+      
+      const response = await fetch('/api/parse-resume', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('API response status:', response.status);
+      console.log('API response ok:', response.ok);
+
+      const data = await response.json();
+      console.log('Raw API response data:', data);
+
+      if (!response.ok) {
+        console.error('API call failed:', data);
+        throw new Error(data.error || 'Failed to parse resume and extract skills');
+      }
+
+      console.log('Resume parsed and skills extracted successfully:', data);
+      console.log('Full API response:', JSON.stringify(data, null, 2));
+
+      // Process the parsed resume and extracted skills
+      const { parsedResume, suggestedSkills } = data.data;
+      console.log('Extracted parsedResume:', parsedResume);
+      console.log('Extracted suggestedSkills:', suggestedSkills);
+      console.log('parsedResume type:', typeof parsedResume);
+      console.log('parsedResume keys:', parsedResume ? Object.keys(parsedResume) : 'null/undefined');
+
+      // Store the parsed resume JSON
+      if (parsedResume) {
+        console.log('Setting parsed resume JSON:', parsedResume);
+        actions.setResumeJSON(parsedResume);
+        console.log('Resume JSON set successfully');
+      } else {
+        console.error('No parsedResume found in API response');
+        console.error('data.data structure:', data.data);
+      }
+
+      // Set suggested skills (all unchecked by default)
+      if (suggestedSkills && suggestedSkills.length > 0) {
+        console.log('Setting suggested skills:', suggestedSkills);
+        actions.setSuggestedSkills(suggestedSkills);
+        actions.setSelectedSkills([]); // All unchecked by default
+      }
+
+      // Move to skills selection step
       actions.setInputSubmitted(true);
       actions.setCurrentStep('skills');
       
-      toast.success('Skills extracted successfully. Resume will be parsed when you generate documents.');
+      toast.success('Resume parsed and skills extracted successfully!');
       
     } catch (error) {
-      console.error('Error processing form:', error);
-      toast.error('Failed to process form');
+      console.error('Error parsing resume:', error);
+      actions.setError(error.message);
+      toast.error(`Error: ${error.message}`);
+    } finally {
+      actions.setGenerating(false);
     }
   };
 
@@ -177,13 +241,16 @@ const ResumeInputForm = () => {
               type="submit"
               variant="primary"
               size="lg"
-              disabled={!state.jobDescription.trim() || !state.originalResume.trim()}
+              disabled={!state.jobDescription.trim() || !state.originalResume.trim() || state.isGenerating}
             >
-              Extract Skills & Continue
+              {state.isGenerating ? 'Processing...' : 'Continue'}
             </Button>
           </div>
         </form>
       </div>
+      
+      {/* Loading Popup */}
+      <LoadingPopup isVisible={state.isGenerating} type="parsing" />
     </div>
   );
 };

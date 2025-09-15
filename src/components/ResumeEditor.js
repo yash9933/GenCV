@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { downloadPDF } from '../lib/utils';
+import { downloadPDF, copyToClipboard, downloadFile } from '../lib/utils';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import Textarea from './ui/Textarea';
@@ -33,8 +33,8 @@ import toast from 'react-hot-toast';
  */
 const Section = ({ section, sectionIndex, onReorderBullets, onToggleBullet, onEditJobTitle, onEditSkill, onReorderSkills }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
         <div className="text-sm text-gray-500">{section.entries.length} entries</div>
       </div>
@@ -77,9 +77,9 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
   };
 
   return (
-    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-sm transition-shadow">
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-2 hover:shadow-sm transition-shadow">
       {/* Entry Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex-1">
           {isEditingTitle ? (
             <div className="flex items-center space-x-2">
@@ -126,7 +126,7 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
 
       {/* Tech Stack */}
       {entry.tech_stack && entry.tech_stack.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-2">
           <div className="text-sm text-gray-600 mb-1">Tech Stack:</div>
           <div className="flex flex-wrap gap-1">
             {entry.tech_stack.map((tech, index) => (
@@ -143,7 +143,7 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
 
       {/* Skills */}
       {entry.skills && Array.isArray(entry.skills) && entry.skills.length > 0 && (
-        <div className="mb-3">
+        <div className="mb-2">
           <div className="text-sm text-gray-600 mb-1">Skills:</div>
           <div className="space-y-1">
             <SortableContext items={entry.skills.map((_, index) => `skill-${sectionIndex}-${entryIndex}-${index}`)} strategy={verticalListSortingStrategy}>
@@ -166,7 +166,7 @@ const Entry = ({ entry, sectionIndex, entryIndex, onReorderBullets, onToggleBull
       {/* Bullets */}
       {entry.bullets && Array.isArray(entry.bullets) && entry.bullets.length > 0 && (
         <div>
-          <div className="text-sm text-gray-600 mb-2">Bullet Points:</div>
+          <div className="text-sm text-gray-600 mb-1">Bullet Points:</div>
           <div className="space-y-1">
             <SortableContext items={entry.bullets.map(bullet => bullet.id)} strategy={verticalListSortingStrategy}>
               {entry.bullets.map((bullet, bulletIndex) => (
@@ -220,7 +220,7 @@ const SortableBullet = ({ bullet, sectionIndex, entryIndex, bulletIndex, onToggl
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-start space-x-3 p-3 rounded hover:bg-gray-100 transition-all duration-150 ${
+      className={`flex items-start space-x-2 p-2 rounded hover:bg-gray-100 transition-all duration-150 ${
         bullet.origin === 'ai' ? 'bg-yellow-50 border-l-4 border-yellow-400' : 'bg-white border-l-4 border-gray-300'
       } ${isDragging ? 'shadow-lg scale-105' : ''}`}
     >
@@ -310,7 +310,7 @@ const SortableSkill = ({ skill, skillIndex, sectionIndex, entryIndex, onEditSkil
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center space-x-2 p-2 rounded hover:bg-gray-100 transition-all duration-150 bg-green-50 border border-green-200 ${
+      className={`flex items-center space-x-2 p-1.5 rounded hover:bg-gray-100 transition-all duration-150 bg-green-50 border border-green-200 ${
         isDragging ? 'shadow-lg scale-105' : ''
       }`}
     >
@@ -372,6 +372,25 @@ const ResumeEditor = () => {
   const { resumeJSON } = state;
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isEditingCoverLetter, setIsEditingCoverLetter] = useState(false);
+  const [editedCoverLetter, setEditedCoverLetter] = useState('');
+
+  // Cover letter editing functions
+  const handleEditCoverLetter = () => {
+    setEditedCoverLetter(state.coverLetter || '');
+    setIsEditingCoverLetter(true);
+  };
+
+  const handleSaveCoverLetter = () => {
+    actions.setCoverLetter(editedCoverLetter);
+    setIsEditingCoverLetter(false);
+    toast.success('Cover letter updated successfully');
+  };
+
+  const handleCancelEditCoverLetter = () => {
+    setEditedCoverLetter(state.coverLetter || '');
+    setIsEditingCoverLetter(false);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -526,9 +545,9 @@ const ResumeEditor = () => {
   
   if (!resumeJSON || (!hasOldSchema && !hasNewSchema && !hasBasicInfo)) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Resume Editor
           </h2>
           <p className="text-gray-600">No resume data available. Please upload or paste your resume first.</p>
@@ -540,9 +559,10 @@ const ResumeEditor = () => {
   // If using new schema, show the full editor
   if (resumeJSON.experience && resumeJSON.experience.length > 0) {
     return (
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex items-center justify-between mb-6">
+      <>
+        <div className="max-w-7xl mx-auto p-4">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Resume Editor</h2>
             <div className="flex space-x-4">
               <Button
@@ -582,10 +602,10 @@ const ResumeEditor = () => {
             </div>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Contact Information */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h3>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Contact Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -643,8 +663,8 @@ const ResumeEditor = () => {
             </div>
 
             {/* Summary */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Professional Summary</h3>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Professional Summary</h3>
               <Textarea
                 value={resumeJSON.summary || ''}
                 onChange={(e) => actions.updateSummary(e.target.value)}
@@ -654,8 +674,8 @@ const ResumeEditor = () => {
             </div>
 
             {/* Experience */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">Professional Experience</h3>
                 <Button
                   variant="outline"
@@ -692,8 +712,8 @@ const ResumeEditor = () => {
             </div>
 
             {/* Education */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-800">Education</h3>
                 <Button
                   variant="outline"
@@ -725,8 +745,8 @@ const ResumeEditor = () => {
             </div>
 
             {/* Technical Skills */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Technical Skills</h3>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Technical Skills</h3>
               <SkillsEditor
                 skills={resumeJSON.technical_skills}
                 onUpdate={(category, skills) => actions.updateSkills(category, skills)}
@@ -735,8 +755,8 @@ const ResumeEditor = () => {
 
             {/* Projects */}
             {resumeJSON.projects && resumeJSON.projects.length > 0 && (
-              <div className="border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-semibold text-gray-800">Projects</h3>
                   <Button
                     variant="outline"
@@ -769,8 +789,8 @@ const ResumeEditor = () => {
             )}
 
             {/* Certifications */}
-            <div className="border border-gray-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Certifications</h3>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Certifications</h3>
               <CertificationsEditor
                 certifications={resumeJSON.certifications || []}
                 onUpdate={(certs) => actions.updateCertifications(certs)}
@@ -779,8 +799,8 @@ const ResumeEditor = () => {
 
             {/* Volunteer */}
             {(resumeJSON.volunteer?.title || resumeJSON.volunteer?.organization) && (
-              <div className="border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Volunteer Experience</h3>
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Volunteer Experience</h3>
                 <VolunteerEditor
                   volunteer={resumeJSON.volunteer}
                   onUpdate={(volunteer) => actions.updateVolunteer(volunteer)}
@@ -788,15 +808,105 @@ const ResumeEditor = () => {
               </div>
             )}
           </div>
+
         </div>
       </div>
+
+      {/* Cover Letter Section - Separate Container */}
+      {state.coverLetter && state.coverLetter.trim() && (
+        <div className="max-w-7xl mx-auto p-4 mt-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
+              <div className="flex space-x-2">
+                {isEditingCoverLetter ? (
+                  <>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleSaveCoverLetter}
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleCancelEditCoverLetter}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditCoverLetter}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        if (!state.coverLetter.trim()) {
+                          toast.error('No cover letter to copy');
+                          return;
+                        }
+                        const success = await copyToClipboard(state.coverLetter);
+                        if (success) {
+                          toast.success('Cover letter copied to clipboard');
+                        } else {
+                          toast.error('Failed to copy to clipboard');
+                        }
+                      }}
+                    >
+                      Copy
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        if (!state.coverLetter.trim()) {
+                          toast.error('No cover letter to download');
+                          return;
+                        }
+                        downloadFile(state.coverLetter, 'cover-letter.pdf', 'application/pdf');
+                        toast.success('Cover letter downloaded as PDF');
+                      }}
+                    >
+                      Download PDF
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 rounded-lg p-4">
+              <Textarea
+                value={isEditingCoverLetter ? editedCoverLetter : state.coverLetter}
+                onChange={isEditingCoverLetter ? (e) => setEditedCoverLetter(e.target.value) : () => {}}
+                rows={12}
+                disabled={!isEditingCoverLetter}
+                className={`${isEditingCoverLetter ? 'bg-white border border-gray-300' : 'bg-white border-0'} resize-none`}
+              />
+            </div>
+            
+            <div className="mt-3 text-center text-sm text-gray-600">
+              <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <div className="flex items-center justify-between mb-6">
+    <>
+      <div className="max-w-7xl mx-auto p-4">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
             Resume Editor
           </h2>
@@ -843,7 +953,7 @@ const ResumeEditor = () => {
         </div>
 
         {/* Metadata Section */}
-        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
           <h3 className="text-lg font-semibold text-blue-900 mb-3">Contact Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -924,8 +1034,97 @@ const ResumeEditor = () => {
               </div>
             )}
          </DndContext>
+
       </div>
     </div>
+
+    {/* Cover Letter Section - Separate Container */}
+    {state.coverLetter && state.coverLetter.trim() && (
+      <div className="max-w-7xl mx-auto p-4 mt-6">
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
+            <div className="flex space-x-2">
+              {isEditingCoverLetter ? (
+                <>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleSaveCoverLetter}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleCancelEditCoverLetter}
+                  >
+                    Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditCoverLetter}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!state.coverLetter.trim()) {
+                        toast.error('No cover letter to copy');
+                        return;
+                      }
+                      const success = await copyToClipboard(state.coverLetter);
+                      if (success) {
+                        toast.success('Cover letter copied to clipboard');
+                      } else {
+                        toast.error('Failed to copy to clipboard');
+                      }
+                    }}
+                  >
+                    Copy
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      if (!state.coverLetter.trim()) {
+                        toast.error('No cover letter to download');
+                        return;
+                      }
+                      downloadFile(state.coverLetter, 'cover-letter.pdf', 'application/pdf');
+                      toast.success('Cover letter downloaded as PDF');
+                    }}
+                  >
+                    Download PDF
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-4">
+            <Textarea
+              value={isEditingCoverLetter ? editedCoverLetter : state.coverLetter}
+              onChange={isEditingCoverLetter ? (e) => setEditedCoverLetter(e.target.value) : () => {}}
+              rows={12}
+              disabled={!isEditingCoverLetter}
+              className={`${isEditingCoverLetter ? 'bg-white border border-gray-300' : 'bg-white border-0'} resize-none`}
+            />
+          </div>
+          
+          <div className="mt-3 text-center text-sm text-gray-600">
+            <p>💡 Tip: The cover letter is personalized to the job description and highlights your selected skills.</p>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 
@@ -969,8 +1168,8 @@ const ExperienceEditor = ({ job, index, onUpdate, onDelete }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="border border-gray-200 rounded-lg p-3 mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-gray-900">Experience #{index + 1}</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1104,8 +1303,8 @@ const EducationEditor = ({ education, index, onUpdate, onDelete }) => {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="border border-gray-200 rounded-lg p-3 mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-gray-900">Education #{index + 1}</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1206,7 +1405,7 @@ const SkillsEditor = ({ skills, onUpdate }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-gray-900">Technical Skills</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1279,7 +1478,7 @@ const CertificationsEditor = ({ certifications, onUpdate }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-gray-900">Certifications</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1360,7 +1559,7 @@ const VolunteerEditor = ({ volunteer, onUpdate }) => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h4 className="font-semibold text-gray-900">Volunteer Experience</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1535,8 +1734,8 @@ const ExperienceWithBullets = ({
   const normalizedResponsibilities = normalizeResponsibilities(job.responsibilities);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 mb-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="border border-gray-200 rounded-lg p-3 mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="font-semibold text-gray-900">Experience #{index + 1}</h4>
         <div className="flex space-x-2">
           {isEditing ? (
@@ -1737,7 +1936,7 @@ const BulletItem = ({ bullet, bulletIndex, onToggle, onUpdate }) => {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-start space-x-3 p-3 border rounded-lg ${
+      className={`flex items-start space-x-2 p-2 border rounded-lg ${
         bullet.enabled ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200 opacity-60'
       }`}
     >
@@ -1887,9 +2086,9 @@ const ProjectEditor = ({ project, index, onUpdate, onDelete }) => {
     <div
       ref={setNodeRef}
       style={style}
-      className="border border-gray-200 rounded-lg p-4 mb-4"
+      className="border border-gray-200 rounded-lg p-3 mb-3"
     >
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <div
             {...attributes}

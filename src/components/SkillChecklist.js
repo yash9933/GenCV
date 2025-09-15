@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { generateId, extractBulletPoints } from '../lib/utils';
 import Button from './ui/Button';
 import Checkbox from './ui/Checkbox';
+import LoadingPopup from './LoadingPopup';
 import toast from 'react-hot-toast';
 
 // Helper function to extract resume metadata
@@ -104,90 +105,6 @@ const SkillChecklist = () => {
     }
   };
 
-  /**
-   * Handle extract skills and continue (Step 1)
-   */
-  const handleExtractSkills = async () => {
-    console.log('=== STARTING EXTRACT SKILLS ===');
-    console.log('Function called successfully!');
-    console.log('Current state:', {
-      jobDescription: state.jobDescription,
-      originalResume: state.originalResume,
-      hasJobDescription: !!state.jobDescription,
-      hasResumeText: !!state.originalResume,
-      resumeTextLength: state.originalResume?.length || 0
-    });
-    
-    actions.setGenerating(true);
-    actions.setError(null);
-
-    try {
-      console.log('Extracting skills from resume and job description...');
-      console.log('Making API call to /api/parse-resume...');
-      
-      const requestBody = {
-        jobDescription: state.jobDescription,
-        resumeText: state.originalResume,
-      };
-      
-      console.log('Request body:', requestBody);
-      
-      const response = await fetch('/api/parse-resume', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-      
-      console.log('API response status:', response.status);
-      console.log('API response ok:', response.ok);
-
-      const data = await response.json();
-      console.log('Raw API response data:', data);
-
-      if (!response.ok) {
-        console.error('API call failed:', data);
-        throw new Error(data.error || 'Failed to parse resume and extract skills');
-      }
-
-      console.log('Resume parsed and skills extracted successfully:', data);
-      console.log('Full API response:', JSON.stringify(data, null, 2));
-
-      // Process the parsed resume and extracted skills
-      const { parsedResume, suggestedSkills } = data.data;
-      console.log('Extracted parsedResume:', parsedResume);
-      console.log('Extracted suggestedSkills:', suggestedSkills);
-      console.log('parsedResume type:', typeof parsedResume);
-      console.log('parsedResume keys:', parsedResume ? Object.keys(parsedResume) : 'null/undefined');
-
-      // Store the parsed resume JSON
-      if (parsedResume) {
-        console.log('Setting parsed resume JSON:', parsedResume);
-        actions.setResumeJSON(parsedResume);
-        console.log('Resume JSON set successfully');
-      } else {
-        console.error('No parsedResume found in API response');
-        console.error('data.data structure:', data.data);
-      }
-
-      // Set suggested skills (all unchecked by default)
-      if (suggestedSkills && suggestedSkills.length > 0) {
-        console.log('Setting suggested skills:', suggestedSkills);
-        actions.setSuggestedSkills(suggestedSkills);
-        actions.setSelectedSkills([]); // All unchecked by default
-      }
-
-      toast.success('Resume parsed and skills extracted successfully!');
-
-    } catch (error) {
-      console.error('Error parsing resume:', error);
-      actions.setError(error.message);
-      toast.error(`Error: ${error.message}`);
-    } finally {
-      actions.setGenerating(false);
-    }
-  };
 
   /**
    * Handle generate documents (Step 2)
@@ -348,37 +265,14 @@ const SkillChecklist = () => {
       <div className="bg-white rounded-lg shadow-lg p-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            {hasParsedResume ? 'Select Skills to Highlight' : 'Extract Skills & Continue'}
+            Select Skills to Highlight
           </h2>
           <p className="text-gray-600 mt-2">
-            {hasParsedResume 
-              ? 'We\'ve identified the following skills from your resume and job description. Select the ones you want to highlight:'
-              : 'Click the button below to parse your resume and extract relevant skills from the job description.'
-            }
+            We've identified the following skills from your resume and job description. Select the ones you want to highlight:
           </p>
         </div>
 
-        {!hasParsedResume ? (
-          // Step 1: Extract Skills
-          <div className="mb-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-              <h3 className="text-lg font-semibold text-blue-900 mb-2">
-                Step 1: Parse Resume & Extract Skills
-              </h3>
-              <p className="text-blue-700 mb-4">
-                We'll analyze your resume and the job description to identify relevant skills and technologies.
-              </p>
-              <Button
-                variant="primary"
-                onClick={handleExtractSkills}
-                disabled={state.isGenerating}
-                className="px-8"
-              >
-                {state.isGenerating ? 'Extracting Skills...' : 'Extract Skills & Continue'}
-              </Button>
-            </div>
-          </div>
-        ) : (
+        {hasParsedResume ? (
           // Step 2: Select Skills
           <div className="mb-6">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -405,6 +299,24 @@ const SkillChecklist = () => {
                 ))}
               </div>
             )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                Resume Not Parsed Yet
+              </h3>
+              <p className="text-yellow-700">
+                Please go back to the previous step and click "Continue" to parse your resume and extract skills.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => actions.setCurrentStep('input')}
+                className="mt-4"
+              >
+                Go Back
+              </Button>
+            </div>
           </div>
         )}
 
@@ -470,6 +382,9 @@ const SkillChecklist = () => {
           </div>
         )}
       </div>
+      
+      {/* Loading Popup */}
+      <LoadingPopup isVisible={state.isGenerating} type="generating" />
     </div>
   );
 };
