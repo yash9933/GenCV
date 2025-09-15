@@ -6,7 +6,7 @@ import ResetOnReload from './ResetOnReload'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'AI Resume Builder',
+  title: 'Gen CV',
   description: 'Generate human-like, ATS-friendly resumes and cover letters',
 }
 

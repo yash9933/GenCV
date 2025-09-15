@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import Button from './ui/Button';
 import Footer from './Footer';
 
@@ -17,7 +18,16 @@ const HomePage = ({ onGetStarted }) => {
           <div className="text-center">
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              AI-Powered
+              <div className="flex items-center justify-center gap-3">
+                <Image 
+                  src="/icon.png" 
+                  alt="Lightning" 
+                  width={48} 
+                  height={48} 
+                  className="w-12 h-12 md:w-14 md:h-14"
+                />
+                AI-Powered
+              </div>
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Resume Builder
               </span>
