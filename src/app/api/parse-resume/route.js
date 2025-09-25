@@ -92,7 +92,7 @@ function filterHardSkillsOnly(skills) {
   // Skills to exclude (soft skills, generic terms, methodologies)
   const excludeList = [
     // Soft skills and methodologies
-    'agile', 'scrum', 'leadership', 'communication', 'problem solving', 'team collaboration',
+    'agile', 'scrum', 'leadership', 'communication', 'presentations', 'presentation', 'documentation', 'documenting', 'problem solving', 'team collaboration',
     'analytical skills', 'creativity', 'mentoring', 'project management',
     
     // Generic terms and concepts
