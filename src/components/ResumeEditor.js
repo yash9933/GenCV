@@ -547,7 +547,7 @@ const ResumeEditor = () => {
   if (resumeJSON.experience && resumeJSON.experience.length > 0) {
     return (
       <>
-        <div className="max-w-full mx-auto p-4">
+        <div className="max-w-[85rem] mx-auto p-4">
           <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Resume Editor</h2>
@@ -801,7 +801,7 @@ const ResumeEditor = () => {
 
       {/* Cover Letter Section - Separate Container */}
       {state.coverLetter && state.coverLetter.trim() && (
-        <div className="max-w-full mx-auto p-4 mt-6">
+        <div className="max-w-[85rem] mx-auto p-4 mt-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
@@ -873,7 +873,7 @@ const ResumeEditor = () => {
 
   return (
     <>
-      <div className="max-w-full mx-auto p-4">
+      <div className="max-w-[85rem] mx-auto p-4">
         <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
@@ -1009,7 +1009,7 @@ const ResumeEditor = () => {
 
     {/* Cover Letter Section - Separate Container */}
     {state.coverLetter && state.coverLetter.trim() && (
-      <div className="max-w-full mx-auto p-4 mt-6">
+      <div className="max-w-[85rem] mx-auto p-4 mt-6">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Generated Cover Letter</h2>
