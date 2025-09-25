@@ -4,7 +4,7 @@ import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/rendere
 const styles = StyleSheet.create({
   page: {
     paddingTop: 28,
-    paddingBottom: 28,
+    paddingBottom: 30,
     paddingLeft: 44,
     paddingRight: 44,
     fontSize: 11,
@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   },
   header: {
     textAlign: 'center',
-    marginBottom: 6 // Further reduced
+    marginBottom: 8 // Slightly increased for spacing below contact line
   },
   name: {
     fontSize: 19, // Further reduced
@@ -35,6 +35,9 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 6
   },
+  sectionProjects: {
+    marginTop: 6
+  },
   sectionTitleWithRule: {
     fontSize: 11, // Reduced
     fontWeight: 'bold',
@@ -51,7 +54,7 @@ const styles = StyleSheet.create({
     flex: 1
   },
   bullets: {
-    marginLeft: 10,
+    marginLeft: 14,
     marginTop: 1
   },
   bullet: {
@@ -104,7 +107,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 1.3,
     color: '#000',
-    marginBottom: 4
+    marginBottom: 4,
+    textAlign: 'justify'
   },
   // Generic entry styles for all sections (experience, education, volunteer)
   entry: {
@@ -397,7 +401,7 @@ export const ResumeTemplate = ({ resume }) => {
             (project.description && project.description.trim())
           )
         ).length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, styles.sectionProjects]}>
             <Text style={styles.sectionTitleWithRule}>PROJECTS</Text>
             <View style={styles.sectionRule} />
             {resume.projects.filter(project => 
@@ -519,7 +523,7 @@ export const ResumeTemplate = ({ resume }) => {
         {resume.education && resume.education.filter(edu => 
           edu.degree?.trim() && edu.institution?.trim()
         ).length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, styles.sectionProjects]}>
             <Text style={styles.sectionTitleWithRule}>EDUCATION</Text>
             <View style={styles.sectionRule} />
             {resume.education.filter(edu => 
