@@ -11,6 +11,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Prevent hydration mismatches caused by browser extensions */
+img[data-nimg] {
+  /* Ensure consistent styling regardless of browser extensions */
+  color: transparent !important;
+}
+
+/* Override any browser extension modifications that might cause hydration issues */
+[data-darkreader-inline-color] {
+  color: transparent !important;
+}
+
 /* Resume specific styles */
 .resume-section {
   @apply mb-6;

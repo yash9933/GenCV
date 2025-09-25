@@ -77,6 +77,23 @@ class AIClientFactory {
       return await client.generateResumeContent(params);
     }
   }
+
+  /**
+   * Extract skills from job description using specified provider
+   * @param {string} provider - 'gemini' or 'gpt'
+   * @param {string} jobDescription - The job description text
+   * @returns {Promise<Array>} - Array of suggested skills
+   */
+  async extractSkillsFromJobDescription(provider = 'gemini', jobDescription) {
+    const client = this.getClient(provider);
+    
+    // Check if the client has the extractSkillsFromJobDescription method
+    if (typeof client.extractSkillsFromJobDescription === 'function') {
+      return await client.extractSkillsFromJobDescription(jobDescription);
+    } else {
+      throw new Error(`AI provider '${provider}' does not support skill extraction`);
+    }
+  }
 }
 
 export default AIClientFactory;

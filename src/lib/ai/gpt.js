@@ -17,6 +17,84 @@ class GPTClient {
   }
 
   /**
+   * Extract skills from job description using AI
+   * @param {string} jobDescription - The job description text
+   * @returns {Promise<Array>} - Array of suggested skills
+   */
+  async extractSkillsFromJobDescription(jobDescription) {
+    const prompt = this.buildSkillExtractionPrompt(jobDescription);
+
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert technical recruiter and career coach. Extract all relevant skills from job descriptions accurately."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1000
+      });
+
+      const response = completion.choices[0].message.content;
+      
+      // Parse JSON response
+      try {
+        const parsed = JSON.parse(response);
+        return parsed;
+      } catch (parseError) {
+        console.error('Error parsing GPT skill extraction response:', parseError);
+        throw new Error('Invalid response format from GPT for skill extraction');
+      }
+
+    } catch (error) {
+      console.error('Error in extractSkillsFromJobDescription:', error);
+      throw new Error(`GPT skill extraction failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Build the prompt for skill extraction
+   * @param {string} jobDescription - The job description text
+   * @returns {string} - Formatted prompt
+   */
+  buildSkillExtractionPrompt(jobDescription) {
+    return `You are an expert technical recruiter and career coach.
+Your task is to analyze a job description and extract ONLY hard technical skills, tools, and technologies mentioned.
+
+ANALYSIS RULES:
+- Extract ONLY hard technical skills: programming languages, frameworks, tools, platforms, and specific technologies
+- EXCLUDE soft skills, methodologies, and generic terms like:
+  * "Agile", "Scrum", "Leadership", "Communication", "Problem Solving"
+  * "Core Web Vitals", "SEO", "Schema", "Security Hardening"
+  * "Custom Themes", "Custom Post Types", "Paragraphs", "Views"
+  * "CSV", "XML", "JSON" (unless specifically mentioned as core skills)
+  * "Testing Frameworks", "User Roles/Permissions", "Content Migration"
+  * "Responsive Layouts", "UI Design", "Marketing Tools"
+- INCLUDE specific technologies like: "React", "AWS", "Docker", "PHP", "JavaScript", "WordPress", "Drupal"
+- INCLUDE specific tools and platforms: "Figma", "Git", "MySQL", "Pantheon", "WP Engine"
+- INCLUDE specific frameworks and libraries: "Sass", "Twig", "Gutenberg", "ACF"
+- Return skills in their proper case (e.g., "JavaScript" not "javascript", "WordPress" not "wordpress")
+- Remove duplicates and variations (e.g., if both "React" and "React.js" are mentioned, return "React")
+- Sort the final list alphabetically
+- Limit to 15-20 most relevant hard technical skills
+
+JOB DESCRIPTION:
+${jobDescription}
+
+OUTPUT FORMAT:
+Return ONLY a JSON array of strings, with each string being one hard technical skill/technology/tool.
+Example: ["AWS", "Docker", "JavaScript", "React", "PHP", "WordPress", "MySQL", "Git"]
+
+Return ONLY valid JSON array.`;
+  }
+
+  /**
    * Generate resume content using GPT
    * @param {Object} params - Generation parameters
    * @returns {Promise<Object>} - Generated content

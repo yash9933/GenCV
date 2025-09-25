@@ -96,14 +96,18 @@ export const generateCoverLetterPDF = async (coverLetterText) => {
   }
 };
 
+// DEPRECATED: This function is no longer used. Skill extraction is now handled by AI.
+// Keeping for backward compatibility but should be removed in future versions.
 export const extractSkillsFromJD = (jobDescription) => {
+  console.warn('extractSkillsFromJD is deprecated. Use AI-driven skill extraction instead.');
   const commonSkills = [
     'JavaScript', 'Python', 'Java', 'React', 'Node.js', 'SQL', 'AWS', 'Docker',
     'Kubernetes', 'Git', 'Agile', 'Scrum', 'REST API', 'GraphQL', 'TypeScript',
     'Angular', 'Vue.js', 'MongoDB', 'PostgreSQL', 'Redis', 'Kafka', 'Microservices',
     'CI/CD', 'Jenkins', 'Terraform', 'Ansible', 'Linux', 'Machine Learning',
     'Data Analysis', 'Project Management', 'Leadership', 'Communication',
-    'Problem Solving', 'Team Collaboration', 'Analytical Skills', 'Creativity'
+    'Problem Solving', 'Team Collaboration', 'Analytical Skills', 'Creativity',
+    'Drupal', 'WordPress', 'PHP', 'HTML', 'CSS', 'Figma'
   ];
   const foundSkills = [];
   const lowerJD = jobDescription.toLowerCase();
@@ -454,7 +458,8 @@ const extractSkillEntries = (lines) => {
     'confluence', 'visual studio code', 'github',
     'amazon aws', 'google gcp', 'microsoft azure', 'next.js', 'vercel', 'firebase',
     'express.js', 'mern', 'paypal', 'stripe', 'ec3', 'web3', 'blockchain',
-    'websockets', 'jwt', 'oauth2', 'mockito', 'junit', 'dynamodb', 'redis'
+    'websockets', 'jwt', 'oauth2', 'mockito', 'junit', 'dynamodb', 'redis',
+    'drupal', 'wordpress', 'php', 'figma'
   ];
 
   const technicalSkills = [];

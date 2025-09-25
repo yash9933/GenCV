@@ -19,13 +19,17 @@ const HomePage = ({ onGetStarted }) => {
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               <div className="flex items-center justify-center gap-3">
-                <Image 
-                  src="/icon.png" 
-                  alt="Lightning" 
-                  width={48} 
-                  height={48} 
-                  className="w-12 h-12 md:w-14 md:h-14"
-                />
+                <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center">
+                  <Image 
+                    src="/icon.png" 
+                    alt="Lightning" 
+                    width={48} 
+                    height={48} 
+                    className="w-12 h-12 md:w-14 md:h-14"
+                    suppressHydrationWarning
+                    priority
+                  />
+                </div>
                 AI-Powered
               </div>
               <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">

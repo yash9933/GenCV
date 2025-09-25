@@ -273,6 +273,86 @@ Return ONLY valid JSON.`;
   }
 
   /**
+   * Extract skills from job description using AI
+   * @param {string} jobDescription - The job description text
+   * @returns {Promise<Array>} - Array of suggested skills
+   */
+  async extractSkillsFromJobDescription(jobDescription) {
+    const prompt = this.buildSkillExtractionPrompt(jobDescription);
+
+    try {
+      const response = await this.generateContent(prompt);
+
+      // Parse the JSON response
+      let parsedResponse;
+      try {
+        console.log('Raw Gemini skill extraction response:', response);
+        parsedResponse = JSON.parse(response);
+      } catch (parseError) {
+        console.error('Failed to parse Gemini skill extraction response as JSON:', parseError);
+        
+        // Try to clean the response and parse again
+        try {
+          const cleanedResponse = response.trim();
+          const jsonStart = cleanedResponse.indexOf('[');
+          const jsonEnd = cleanedResponse.lastIndexOf(']') + 1;
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            const jsonOnly = cleanedResponse.substring(jsonStart, jsonEnd);
+            console.log('Attempting to parse cleaned skill extraction JSON:', jsonOnly);
+            parsedResponse = JSON.parse(jsonOnly);
+          } else {
+            throw new Error('No JSON array found in skill extraction response');
+          }
+        } catch (cleanError) {
+          console.error('Failed to clean and parse skill extraction response:', cleanError);
+          throw new Error('Invalid JSON response from Gemini API for skill extraction. Please try again.');
+        }
+      }
+
+      return parsedResponse;
+    } catch (error) {
+      console.error('Error in extractSkillsFromJobDescription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build the prompt for skill extraction
+   * @param {string} jobDescription - The job description text
+   * @returns {string} - Formatted prompt
+   */
+  buildSkillExtractionPrompt(jobDescription) {
+    return `You are an expert technical recruiter and career coach.
+Your task is to analyze a job description and extract ONLY hard technical skills, tools, and technologies mentioned.
+
+ANALYSIS RULES:
+- Extract ONLY hard technical skills: programming languages, frameworks, tools, platforms, and specific technologies
+- EXCLUDE soft skills, methodologies, and generic terms like:
+  * "Agile", "Scrum", "Leadership", "Communication", "Problem Solving"
+  * "Core Web Vitals", "SEO", "Schema", "Security Hardening"
+  * "Custom Themes", "Custom Post Types", "Paragraphs", "Views"
+  * "CSV", "XML", "JSON" (unless specifically mentioned as core skills)
+  * "Testing Frameworks", "User Roles/Permissions", "Content Migration"
+  * "Responsive Layouts", "UI Design", "Marketing Tools"
+- INCLUDE specific technologies like: "React", "AWS", "Docker", "PHP", "JavaScript", "WordPress", "Drupal"
+- INCLUDE specific tools and platforms: "Figma", "Git", "MySQL", "Pantheon", "WP Engine"
+- INCLUDE specific frameworks and libraries: "Sass", "Twig", "Gutenberg", "ACF"
+- Return skills in their proper case (e.g., "JavaScript" not "javascript", "WordPress" not "wordpress")
+- Remove duplicates and variations (e.g., if both "React" and "React.js" are mentioned, return "React")
+- Sort the final list alphabetically
+- Limit to 15-20 most relevant hard technical skills
+
+JOB DESCRIPTION:
+${jobDescription}
+
+OUTPUT FORMAT:
+Return ONLY a JSON array of strings, with each string being one hard technical skill/technology/tool.
+Example: ["AWS", "Docker", "JavaScript", "React", "PHP", "WordPress", "MySQL", "Git"]
+
+Return ONLY valid JSON array.`;
+  }
+
+  /**
    * Build the prompt for Gemini
    * @param {Object} params - Parameters for prompt building
    * @returns {string} - Formatted prompt
