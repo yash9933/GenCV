@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { AppProvider, useAppContext } from '../context/AppContext';
 import { 
   HomePage,
@@ -169,12 +170,23 @@ function AppContent() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div>
-                <h1 
-                  onClick={handleBackToHome}
-                  className="text-xl font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
-                >
-                  AI Resume Builder
-                </h1>
+                <div className="flex items-center gap-2">
+                  <Image 
+                    src="/icon.png" 
+                    alt="App Icon" 
+                    width={24} 
+                    height={24} 
+                    className="w-6 h-6 cursor-pointer"
+                    onClick={handleBackToHome}
+                    priority
+                  />
+                  <h1 
+                    onClick={handleBackToHome}
+                    className="text-xl font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                  >
+                    AI Resume Builder
+                  </h1>
+                </div>
                 <p className="text-sm text-gray-600">
                   Generate human-like, ATS-friendly resumes and cover letters
                 </p>
