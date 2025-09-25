@@ -261,15 +261,12 @@ const SkillChecklist = () => {
   });
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <div className="mb-6">
+    <div className="max-w-5xl mx-auto p-4">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
             Select Skills to Highlight
           </h2>
-          <p className="text-gray-600 mt-2">
-            We've identified the following skills from your resume and job description. Select the ones you want to highlight:
-          </p>
         </div>
 
         {hasParsedResume ? (

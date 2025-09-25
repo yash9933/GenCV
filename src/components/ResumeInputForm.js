@@ -165,7 +165,7 @@ const ResumeInputForm = () => {
     return (
     <div className="max-w-5xl mx-auto p-4 h-full">
       <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
           AI Resume Builder
         </h2>
         
