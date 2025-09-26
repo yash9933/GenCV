@@ -599,7 +599,7 @@ export const ResumeTemplate = ({ resume }) => {
                         {entry.job_title || entry.name || entry.degree || entry.category || ''}
                       </Text>
                       <Text style={styles.entrySub}>
-                        {[entry.company, entry.location, entry.institution]
+                        {[entry.company || entry.institution, entry.location]
                           .filter(Boolean)
                           .join(' — ')}
                       </Text>

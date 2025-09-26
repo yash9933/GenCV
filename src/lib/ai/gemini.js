@@ -11,7 +11,6 @@ class GeminiClient {
     }
     console.log('Gemini API Key found:', apiKey ? 'Yes' : 'No');
     this.genAI = new GoogleGenerativeAI(apiKey);
-    // Use the correct model name - gemini-1.5-flash is more reliable
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
   }
 
@@ -84,9 +83,17 @@ class GeminiClient {
 
         // Try to clean the response and parse again
         try {
-          const cleanedResponse = response.trim();
+          let cleanedResponse = response.trim();
+          
+          // Remove markdown code block wrappers if present
+          if (cleanedResponse.startsWith('```json') || cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          // Find JSON object boundaries
           const jsonStart = cleanedResponse.indexOf('{');
           const jsonEnd = cleanedResponse.lastIndexOf('}') + 1;
+          
           if (jsonStart !== -1 && jsonEnd !== -1) {
             const jsonOnly = cleanedResponse.substring(jsonStart, jsonEnd);
             console.log('Attempting to parse cleaned JSON:', jsonOnly);
@@ -99,6 +106,9 @@ class GeminiClient {
           throw new Error('Invalid JSON response from Gemini API. Please try again.');
         }
       }
+
+      // Clean up literal newline characters in text fields
+      parsedResponse = this.cleanLiteralNewlines(parsedResponse);
 
       // Validate response structure
       const requiredKeys = [
@@ -126,6 +136,31 @@ class GeminiClient {
   }
 
   /**
+   * Clean up literal newline characters in parsed JSON response
+   * @param {Object} obj - The parsed JSON object
+   * @returns {Object} - Cleaned object with proper text flow
+   */
+  cleanLiteralNewlines(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    
+    const cleaned = Array.isArray(obj) ? [] : {};
+    
+    for (const [key, value] of Object.entries(obj)) {
+      if (typeof value === 'string') {
+        // Replace literal \n with spaces to maintain text flow
+        cleaned[key] = value.replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
+      } else if (typeof value === 'object' && value !== null) {
+        // Recursively clean nested objects
+        cleaned[key] = this.cleanLiteralNewlines(value);
+      } else {
+        cleaned[key] = value;
+      }
+    }
+    
+    return cleaned;
+  }
+
+  /**
    * Generate bullet points for specific skills
    * @param {Object} params - Parameters for bullet generation
    * @param {string} params.jobDescription - Job description
@@ -149,9 +184,17 @@ class GeminiClient {
         
         // Try to clean the response and parse again
         try {
-          const cleanedResponse = response.trim();
+          let cleanedResponse = response.trim();
+          
+          // Remove markdown code block wrappers if present
+          if (cleanedResponse.startsWith('```json') || cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          // Find JSON object boundaries
           const jsonStart = cleanedResponse.indexOf('{');
           const jsonEnd = cleanedResponse.lastIndexOf('}') + 1;
+          
           if (jsonStart !== -1 && jsonEnd !== -1) {
             const jsonOnly = cleanedResponse.substring(jsonStart, jsonEnd);
             console.log('Attempting to parse cleaned bullet JSON:', jsonOnly);
@@ -164,6 +207,9 @@ class GeminiClient {
           throw new Error('Invalid JSON response from Gemini API for bullet generation. Please try again.');
         }
       }
+
+      // Clean up literal newline characters in text fields
+      parsedResponse = this.cleanLiteralNewlines(parsedResponse);
 
       // Sanitize bullets: remove trailing " at <Company>" phrases
       try {
@@ -269,7 +315,7 @@ OUTPUT JSON FORMAT:
   "coverLetter": "Dear Hiring Manager,\n\n[Full professional cover letter following the engineered prompt structure above - 250-350 words, 3-5 paragraphs, engaging but professional tone, incorporating the generated bullets and aligning strictly to the job description and selected skills. Do not use any resume content.]\n\n\n\nSincerely,\n[First Last Name]"
 }
 
-Return ONLY valid JSON.`;
+Return ONLY valid JSON. Do not wrap the response in markdown code blocks or any other formatting.`;
   }
 
   /**
@@ -293,9 +339,17 @@ Return ONLY valid JSON.`;
         
         // Try to clean the response and parse again
         try {
-          const cleanedResponse = response.trim();
+          let cleanedResponse = response.trim();
+          
+          // Remove markdown code block wrappers if present
+          if (cleanedResponse.startsWith('```json') || cleanedResponse.startsWith('```')) {
+            cleanedResponse = cleanedResponse.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          // Find JSON array boundaries
           const jsonStart = cleanedResponse.indexOf('[');
           const jsonEnd = cleanedResponse.lastIndexOf(']') + 1;
+          
           if (jsonStart !== -1 && jsonEnd !== -1) {
             const jsonOnly = cleanedResponse.substring(jsonStart, jsonEnd);
             console.log('Attempting to parse cleaned skill extraction JSON:', jsonOnly);
@@ -308,6 +362,9 @@ Return ONLY valid JSON.`;
           throw new Error('Invalid JSON response from Gemini API for skill extraction. Please try again.');
         }
       }
+
+      // Clean up literal newline characters in text fields
+      parsedResponse = this.cleanLiteralNewlines(parsedResponse);
 
       return parsedResponse;
     } catch (error) {
@@ -349,7 +406,7 @@ OUTPUT FORMAT:
 Return ONLY a JSON array of strings, with each string being one hard technical skill/technology/tool.
 Example: ["AWS", "Docker", "JavaScript", "React", "PHP", "WordPress", "MySQL", "Git"]
 
-Return ONLY valid JSON array.`;
+Return ONLY valid JSON array. Do not wrap the response in markdown code blocks or any other formatting.`;
   }
 
   /**
@@ -397,7 +454,7 @@ REQUIRED JSON SCHEMA:
     {
       "title": "Role Title",
       "company": "Company Name",
-      "location": "City, State or Country",
+      "location": "City, State or Country (e.g., 'New York, NY' or 'New Delhi, IN')",
       "dates": "MMM YYYY - MMM YYYY",
       "responsibilities": [
         "Achievement 1",
@@ -434,9 +491,9 @@ REQUIRED JSON SCHEMA:
   },
   "education": [
     {
-      "degree": "Degree name",
+      "degree": "Full degree name (e.g., 'Master of Science (M.S.) in Information Technology and Management')",
       "institution": "University name",
-      "location": "City, State or Country",
+      "location": "City, State or Country (e.g., 'New York, NY' or 'New Delhi, IN')",
       "graduation_date": "MMM YYYY"
     }
   ],
@@ -445,7 +502,6 @@ REQUIRED JSON SCHEMA:
       "name": "Project Name",
       "url": "https://project-url.com",
       "technologies": ["Tech1", "Tech2"],
-      "description": "",
       "bullets": [
         "First bullet point about the project",
         "Second bullet point about the project",
@@ -455,7 +511,6 @@ REQUIRED JSON SCHEMA:
     {
       "name": "Another Project",
       "technologies": ["Tech3", "Tech4"],
-      "description": "",
       "bullets": [
         "First bullet point about another project",
         "Second bullet point about another project"
@@ -464,7 +519,6 @@ REQUIRED JSON SCHEMA:
     {
       "name": "Third Project",
       "technologies": ["Tech5", "Tech6", "Tech7"],
-      "description": "",
       "bullets": [
         "First bullet point about third project",
         "Second bullet point about third project",
@@ -508,7 +562,19 @@ RULES:
    - Look for "Tech Stack:" lines after bullet points in each experience entry
    - Parse technologies as comma-separated values into the tech_stack array
    - If no tech stack is mentioned, use empty array [] (do not generate or infer tech stack)
+7a. Extract location properly for experience and education entries:
+   - For location field, extract ONLY the city, state/country part (e.g., "New York, NY" or "New Delhi, IN")
+   - Do NOT include company/institution name in the location field
+   - If location appears as "Company Name — City, State", extract only "City, State"
+   - If location appears as "City, State — City, State", extract only "City, State" (remove duplication)
+   - Location should be clean city/state format without em dashes or company names
 8. Extract certifications from the resume text (PMP, CAPM, CSM, etc.).
+8a. Extract education entries with FULL degree names:
+   - For education entries, preserve the EXACT degree name as written in the resume text
+   - Do NOT shorten or abbreviate degree names (e.g., keep "Master of Science (M.S.) in Information Technology and Management" not just "M.S.")
+   - Extract the full degree name, institution name, location, and graduation date exactly as they appear
+   - If the resume shows "Master of Science (M.S.) in Information Technology and Management", use that exact text for the degree field
+   - Example: If resume has "Bachelor of Science (B.S.) in Computer Science", extract "Bachelor of Science (B.S.) in Computer Science" not "B.S." or "Bachelor of Science"
 9. Extract contact links from the resume text:
    - Look for GitHub URLs (github.com/username) and extract into contact.github
    - Look for Portfolio/Website URLs and extract into contact.portfolio
@@ -516,16 +582,20 @@ RULES:
    - If no URLs found, use empty string ""
 10. Extract ALL projects from the resume text dynamically:
    - Parse ANY number of projects found (0 to N projects)
-   - Each project should have: name, url, technologies array, description, and bullets array
+   - Each project should have: name, url, technologies array, and bullets array (NO description field)
    - Do not create empty project entries
-   - For bullets: Extract each bullet point (•) as a separate string in the bullets array
-   - For description: Only create a brief summary (1-2 sentences) if there are no bullet points. If bullets exist, leave description empty or as a brief project overview
+   - For bullets: Extract ALL project text as bullet points - convert any description text into bullet points
+   - If project has bullet points (•), extract each as a separate string in the bullets array
+   - If project has description text (no bullets), convert that description into a single bullet point
+   - If project has both description and bullets, combine them all into the bullets array
+   - NEVER create a "description" field - everything should go into bullets array
    - For url: Look for URLs associated with each project (github.com, project websites, demo links, etc.) and extract into the url field. If no URL found, use empty string ""
    - Technologies should be extracted from the project header (e.g., "Project Name | Tech1, Tech2, Tech3")
    - Handle duplicate project names as separate entries if they appear
    - If no projects section exists, return empty array []
    - If projects section exists but is empty, return empty array []
-11. Ensure valid JSON with double quotes only.`;
+11. Ensure valid JSON with double quotes only.
+12. Return ONLY valid JSON. Do not wrap the response in markdown code blocks or any other formatting.`;
   }
 }
 
