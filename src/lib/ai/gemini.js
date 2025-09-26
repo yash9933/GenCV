@@ -12,7 +12,7 @@ class GeminiClient {
     console.log('Gemini API Key found:', apiKey ? 'Yes' : 'No');
     this.genAI = new GoogleGenerativeAI(apiKey);
     // Use the correct model name - gemini-1.5-flash is more reliable
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
   }
 
   /**
